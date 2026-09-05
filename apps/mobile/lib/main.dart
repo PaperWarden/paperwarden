@@ -11,7 +11,9 @@ class PaperWardenApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'PaperWarden',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF315C4B)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF315C4B),
+        ),
         useMaterial3: true,
       ),
       home: const Scaffold(
@@ -33,4 +35,3 @@ class PaperWardenApp extends StatelessWidget {
     );
   }
 }
-
