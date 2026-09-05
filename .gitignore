@@ -1,0 +1,30 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+coverage/
+
+# Rust
+target/
+
+# IDE/OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Secrets/signing
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.mobileprovision
+*.env
+.env.*
+
+# Processing artifacts
+.paperwarden-work/
+tmp/
+

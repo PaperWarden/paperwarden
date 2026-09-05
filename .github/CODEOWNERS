@@ -1,0 +1,8 @@
+* @PaperWarden/core
+/.github/ @PaperWarden/core
+/docs/security/ @PaperWarden/core
+/core/src/security/ @PaperWarden/core
+/core/src/privacy/ @PaperWarden/core
+/core/src/pdf/ @PaperWarden/core
+/third_party/ @PaperWarden/core
+

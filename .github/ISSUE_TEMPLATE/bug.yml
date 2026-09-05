@@ -1,0 +1,21 @@
+name: Bug report
+description: Report reproducible incorrect behavior.
+title: "bug: "
+labels: ["type: bug", "status: triage"]
+body:
+  - type: textarea
+    id: summary
+    attributes: {label: Summary}
+    validations: {required: true}
+  - type: textarea
+    id: reproduce
+    attributes: {label: Steps to reproduce, description: Do not upload private documents. Create a minimal safe fixture.}
+    validations: {required: true}
+  - type: dropdown
+    id: platform
+    attributes: {label: Platform, options: [Android, iOS, Rust core, Cross-platform]}
+    validations: {required: true}
+  - type: textarea
+    id: safety
+    attributes: {label: Security/privacy/file impact}
+

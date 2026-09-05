@@ -1,0 +1,18 @@
+name: Research / feasibility spike
+description: Resolve an architectural unknown with evidence.
+title: "research: "
+labels: ["type: research", "status: triage"]
+body:
+  - type: textarea
+    id: question
+    attributes: {label: Decision question}
+    validations: {required: true}
+  - type: textarea
+    id: evidence
+    attributes: {label: Required evidence, description: Include Android/iOS packaging, performance, size, maintenance, security, and licensing where relevant.}
+    validations: {required: true}
+  - type: textarea
+    id: exit
+    attributes: {label: Exit criteria}
+    validations: {required: true}
+

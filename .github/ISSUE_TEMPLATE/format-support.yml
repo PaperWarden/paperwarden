@@ -1,0 +1,18 @@
+name: Format support
+description: Propose or improve a format capability backed by corpus evidence.
+title: "format: "
+labels: ["area: formats", "status: triage"]
+body:
+  - type: input
+    id: format
+    attributes: {label: Format and operation, placeholder: "DOCX -> PDF"}
+    validations: {required: true}
+  - type: textarea
+    id: corpus
+    attributes: {label: Corpus and output-verification plan}
+    validations: {required: true}
+  - type: textarea
+    id: platforms
+    attributes: {label: Android/iOS evidence required}
+    validations: {required: true}
+
