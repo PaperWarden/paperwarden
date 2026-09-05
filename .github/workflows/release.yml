@@ -1,0 +1,58 @@
+name: Release gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_ref:
+        description: Existing tag or commit to verify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-gate
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.release_ref }}
+      - uses: actions/setup-python@v6
+        with: {python-version: "3.13"}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt, clippy}
+      - uses: subosito/flutter-action@v2
+        with: {channel: stable, cache: true}
+      - name: Product invariants
+        run: python scripts/check_invariants.py
+      - name: Rust gates
+        working-directory: core
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets --all-features -- -D warnings
+          cargo test --all-features --locked
+      - name: Flutter gates
+        working-directory: apps/mobile
+        run: |
+          flutter pub get
+          dart format --output=none --set-exit-if-changed .
+          flutter analyze
+          flutter test
+      - name: Record verified revision
+        run: |
+          git rev-parse HEAD > verified-commit.txt
+          sha256sum core/Cargo.lock apps/mobile/pubspec.yaml > foundation-checksums.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-foundation
+          path: |
+            verified-commit.txt
+            foundation-checksums.sha256
+          if-no-files-found: error
+
