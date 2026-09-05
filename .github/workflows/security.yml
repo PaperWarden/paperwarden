@@ -2,18 +2,8 @@ name: Dependency security
 
 on:
   pull_request:
-    paths:
-      - "core/Cargo.toml"
-      - "core/Cargo.lock"
-      - "deny.toml"
-      - ".github/workflows/security.yml"
   push:
     branches: [main]
-    paths:
-      - "core/Cargo.toml"
-      - "core/Cargo.lock"
-      - "deny.toml"
-      - ".github/workflows/security.yml"
   schedule:
     - cron: "31 4 * * 2"
   workflow_dispatch:

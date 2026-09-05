@@ -2,10 +2,8 @@ name: Rust
 
 on:
   pull_request:
-    paths: ["core/**", ".github/workflows/rust.yml"]
   push:
     branches: [main]
-    paths: ["core/**", ".github/workflows/rust.yml"]
 
 permissions:
   contents: read

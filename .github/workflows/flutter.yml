@@ -2,10 +2,8 @@ name: Flutter
 
 on:
   pull_request:
-    paths: ["apps/mobile/**", ".github/workflows/flutter.yml"]
   push:
     branches: [main]
-    paths: ["apps/mobile/**", ".github/workflows/flutter.yml"]
 
 permissions:
   contents: read
