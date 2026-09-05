@@ -26,7 +26,15 @@ FORBIDDEN_DEPENDENCY_MARKERS = {
 
 
 def text_files() -> list[pathlib.Path]:
-    ignored = {".git", ".dart_tool", "build", "target"}
+    ignored = {
+        ".dart_tool",
+        ".git",
+        ".gradle",
+        "DerivedData",
+        "Pods",
+        "build",
+        "target",
+    }
     return [
         path
         for path in ROOT.rglob("*")
@@ -47,7 +55,7 @@ def main() -> int:
     for path in text_files():
         try:
             content = path.read_text(encoding="utf-8").lower()
-        except UnicodeDecodeError:
+        except (OSError, UnicodeDecodeError):
             continue
         if path.name in {"PRODUCT_INVARIANTS.md", "check_invariants.py"}:
             continue
@@ -66,4 +74,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
