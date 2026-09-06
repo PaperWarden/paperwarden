@@ -24,6 +24,8 @@ FORBIDDEN_DEPENDENCY_MARKERS = {
     "amplitude_flutter",
 }
 
+ACTION_REFERENCE = re.compile(r"uses:\s*[^@\s]+@([^\s#]+)")
+
 
 def text_files() -> list[pathlib.Path]:
     ignored = {
@@ -62,6 +64,16 @@ def main() -> int:
         for marker in FORBIDDEN_DEPENDENCY_MARKERS:
             if re.search(rf"(^|[^a-z0-9_]){re.escape(marker)}([^a-z0-9_]|$)", content):
                 errors.append(f"forbidden telemetry/ad dependency marker {marker!r} in {path.relative_to(ROOT)}")
+
+    workflows = ROOT / ".github" / "workflows"
+    for workflow in workflows.glob("*.yml"):
+        content = workflow.read_text(encoding="utf-8")
+        for reference in ACTION_REFERENCE.findall(content):
+            if not re.fullmatch(r"[0-9a-f]{40}", reference):
+                errors.append(
+                    f"GitHub Action is not pinned to a full commit SHA in "
+                    f"{workflow.relative_to(ROOT)}: @{reference}"
+                )
 
     if errors:
         print("Product invariant check failed:", file=sys.stderr)
