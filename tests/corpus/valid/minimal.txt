@@ -1,0 +1,2 @@
+PaperWarden synthetic corpus fixture.
+No private or third-party document content is present.

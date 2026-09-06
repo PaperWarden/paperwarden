@@ -2,10 +2,8 @@ name: Flutter
 
 on:
   pull_request:
-    paths: ["apps/mobile/**", ".github/workflows/flutter.yml"]
   push:
     branches: [main]
-    paths: ["apps/mobile/**", ".github/workflows/flutter.yml"]
 
 permissions:
   contents: read
@@ -16,9 +14,10 @@ jobs:
     defaults:
       run: {working-directory: apps/mobile}
     steps:
-      - uses: actions/checkout@v6
-      - uses: subosito/flutter-action@v2
-        with: {channel: stable, cache: true}
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Install verified Flutter SDK
+        run: .github/scripts/setup_flutter.sh
+        working-directory: ${{ github.workspace }}
       - run: flutter pub get
       - run: dart format --output=none --set-exit-if-changed .
       - run: flutter analyze

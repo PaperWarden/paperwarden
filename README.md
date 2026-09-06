@@ -33,8 +33,9 @@ product behavior.
 
 ## Development
 
-This seed intentionally contains only a minimal Flutter shell and Rust job model.
-The first engineering work is the feasibility milestone in `ROADMAP.md`.
+The repository pins Rust 1.98.0 and Flutter 3.47.2. Android and iOS host
+projects are committed; the first engineering work remains the M0 feasibility
+milestone in `ROADMAP.md`.
 
 ```sh
 cd core
@@ -43,12 +44,20 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-features
 ```
 
-Flutter platform projects will be generated and reviewed in the dedicated
-workspace-bootstrap issue before Android or iOS builds are considered complete.
+```sh
+cd apps/mobile
+flutter pub get
+dart format --output=none --set-exit-if-changed .
+flutter analyze
+flutter test
+flutter build apk --debug
+```
+
+Run `python scripts/check_invariants.py`, `python scripts/check_licenses.py`, and
+`python scripts/check_corpus.py` before opening a pull request that changes
+guardrails, dependencies, or fixtures.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Security reports must follow the private
-reporting instructions that will be published in `SECURITY.md` before accepting
-outside contributions.
-
+See [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately using
+the process in [SECURITY.md](SECURITY.md).

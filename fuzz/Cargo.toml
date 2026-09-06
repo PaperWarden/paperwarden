@@ -1,0 +1,19 @@
+[package]
+name = "paperwarden-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+paperwarden-core = { path = "../core" }
+
+[[bin]]
+name = "job_id"
+path = "fuzz_targets/job_id.rs"
+test = false
+doc = false
+bench = false

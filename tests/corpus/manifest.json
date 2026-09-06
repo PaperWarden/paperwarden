@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "fixtures": [
+    {
+      "path": "valid/minimal.txt",
+      "sha256": "dbdf9eefab2803d3018e4b1892c6fd7df6b5e788c614d25b0e28af1b8d62d188",
+      "license": "CC0-1.0",
+      "provenance": "Created synthetically for PaperWarden",
+      "purpose": "Minimal known-safe text fixture",
+      "expected": "Accept as plain text without network access"
+    },
+    {
+      "path": "malformed/truncated.pdf",
+      "sha256": "d5e319b03f8a773064ec4a46f8ea4f0ce69ee036ca3697a22688f953acba33dc",
+      "license": "CC0-1.0",
+      "provenance": "Created synthetically for PaperWarden",
+      "purpose": "Exercise early rejection of incomplete PDF structures",
+      "expected": "Reject as malformed without executing or fetching anything"
+    },
+    {
+      "path": "security/active-content-markers.txt",
+      "sha256": "93d7b182406b3d5489b5e2fcaaa2a2b339a2f437470af80292d993a04c2a640d",
+      "license": "CC0-1.0",
+      "provenance": "Created synthetically for PaperWarden",
+      "purpose": "Inert tokens for active-content detector regression tests",
+      "expected": "Flag PDF JavaScript, Office macro, and remote-resource markers"
+    }
+  ]
+}
