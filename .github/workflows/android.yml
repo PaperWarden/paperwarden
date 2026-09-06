@@ -27,6 +27,7 @@ jobs:
           java-version: "17"
       - name: Install verified Flutter SDK
         run: .github/scripts/setup_flutter.sh
+        working-directory: ${{ github.workspace }}
       - run: flutter pub get
       - name: Verify production manifest has no Internet permission
         run: |

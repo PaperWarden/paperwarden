@@ -23,6 +23,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Install verified Flutter SDK
         run: .github/scripts/setup_flutter.sh
+        working-directory: ${{ github.workspace }}
       - run: flutter pub get
       - name: Audit network entitlements
         run: |
