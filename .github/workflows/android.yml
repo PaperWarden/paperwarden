@@ -26,7 +26,7 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: subosito/flutter-action@v2
-        with: {channel: stable, cache: true}
+        with: {flutter-version: "3.47.2", channel: stable, cache: true}
       - run: flutter pub get
       - name: Verify production manifest has no Internet permission
         run: |

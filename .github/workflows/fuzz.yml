@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@nightly
+      - uses: dtolnay/rust-toolchain@nightly-2026-08-26
       - run: cargo install cargo-fuzz --locked
       - name: Fuzz validated job identifiers for 60 seconds
         working-directory: fuzz
