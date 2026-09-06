@@ -15,6 +15,10 @@ impl JobId {
         }
         Ok(Self(value))
     }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

@@ -1,0 +1,20 @@
+name: Bounded fuzzing
+
+on:
+  schedule:
+    - cron: "43 2 * * 4"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  job-id:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo install cargo-fuzz --locked
+      - name: Fuzz validated job identifiers for 60 seconds
+        working-directory: fuzz
+        run: cargo +nightly fuzz run job_id -- -max_total_time=60

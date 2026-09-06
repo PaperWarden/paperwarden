@@ -1,0 +1,4 @@
+INERT SYNTHETIC TOKENS FOR DETECTION TESTS ONLY
+PDF_ACTION: /JavaScript
+OFFICE_MACRO: vbaProject.bin
+REMOTE_RESOURCE: https://invalid.example.invalid/document-resource

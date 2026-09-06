@@ -4,5 +4,7 @@
 //! crate intentionally performs no network I/O.
 
 pub mod job;
+pub mod workspace;
 
 pub use job::{Job, JobId, JobState};
+pub use workspace::Workspace;

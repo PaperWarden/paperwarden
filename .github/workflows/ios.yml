@@ -24,4 +24,12 @@ jobs:
       - uses: subosito/flutter-action@v2
         with: {channel: stable, cache: true}
       - run: flutter pub get
+      - name: Audit network entitlements
+        run: |
+          while IFS= read -r entitlement; do
+            if grep -Eq 'com\.apple\.developer\.networking|com\.apple\.security\.network' "$entitlement"; then
+              echo "Unexpected network entitlement in $entitlement" >&2
+              exit 1
+            fi
+          done < <(find ios -name '*.entitlements' -type f)
       - run: flutter build ios --simulator --no-codesign
