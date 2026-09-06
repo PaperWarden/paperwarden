@@ -27,8 +27,8 @@ jobs:
         with: {python-version: "3.13"}
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable action
         with: {toolchain: "1.98.0", components: rustfmt, clippy}
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
-        with: {flutter-version: "3.47.2", channel: stable, cache: false}
+      - name: Install verified Flutter SDK
+        run: .github/scripts/setup_flutter.sh
       - name: Product invariants
         run: python scripts/check_invariants.py
       - name: Corpus and license gates
