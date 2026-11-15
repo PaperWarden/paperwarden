@@ -1,0 +1,36 @@
+name: iOS
+
+on:
+  pull_request:
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/ios.yml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/ios.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    runs-on: macos-latest
+    defaults:
+      run: {working-directory: apps/mobile}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Install verified Flutter SDK
+        run: .github/scripts/setup_flutter.sh
+        working-directory: ${{ github.workspace }}
+      - run: flutter pub get
+      - name: Audit network entitlements
+        run: |
+          while IFS= read -r entitlement; do
+            if grep -Eq 'com\.apple\.developer\.networking|com\.apple\.security\.network' "$entitlement"; then
+              echo "Unexpected network entitlement in $entitlement" >&2
+              exit 1
+            fi
+          done < <(find ios -name '*.entitlements' -type f)
+      - run: flutter build ios --simulator --no-codesign

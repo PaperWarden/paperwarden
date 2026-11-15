@@ -14,3 +14,7 @@ Never include real private documents, live credentials, functional malware, or
 unreviewed third-party copyrighted material. Each fixture needs provenance,
 license, purpose, and an expected result.
 
+`manifest.json` is authoritative. CI verifies safe relative paths, uniqueness,
+SHA-256 hashes, provenance, license, purpose, and expected behavior. The initial
+fixtures are deliberately synthetic and inert; capability-specific binary
+corpora are added only through reviewed M0 issues.

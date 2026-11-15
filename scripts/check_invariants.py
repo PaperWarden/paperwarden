@@ -24,9 +24,19 @@ FORBIDDEN_DEPENDENCY_MARKERS = {
     "amplitude_flutter",
 }
 
+ACTION_REFERENCE = re.compile(r"uses:\s*[^@\s]+@([^\s#]+)")
+
 
 def text_files() -> list[pathlib.Path]:
-    ignored = {".git", ".dart_tool", "build", "target"}
+    ignored = {
+        ".dart_tool",
+        ".git",
+        ".gradle",
+        "DerivedData",
+        "Pods",
+        "build",
+        "target",
+    }
     return [
         path
         for path in ROOT.rglob("*")
@@ -47,13 +57,23 @@ def main() -> int:
     for path in text_files():
         try:
             content = path.read_text(encoding="utf-8").lower()
-        except UnicodeDecodeError:
+        except (OSError, UnicodeDecodeError):
             continue
         if path.name in {"PRODUCT_INVARIANTS.md", "check_invariants.py"}:
             continue
         for marker in FORBIDDEN_DEPENDENCY_MARKERS:
             if re.search(rf"(^|[^a-z0-9_]){re.escape(marker)}([^a-z0-9_]|$)", content):
                 errors.append(f"forbidden telemetry/ad dependency marker {marker!r} in {path.relative_to(ROOT)}")
+
+    workflows = ROOT / ".github" / "workflows"
+    for workflow in workflows.glob("*.yml"):
+        content = workflow.read_text(encoding="utf-8")
+        for reference in ACTION_REFERENCE.findall(content):
+            if not re.fullmatch(r"[0-9a-f]{40}", reference):
+                errors.append(
+                    f"GitHub Action is not pinned to a full commit SHA in "
+                    f"{workflow.relative_to(ROOT)}: @{reference}"
+                )
 
     if errors:
         print("Product invariant check failed:", file=sys.stderr)
@@ -66,4 +86,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
