@@ -1,3 +1,9 @@
+//! Isolated on-disk job workspaces.
+//!
+//! This is the only module that creates or deletes job workspace directories.
+//! Feature code must not manage temporary files itself (`ARCHITECTURE.md`,
+//! ADR-0004).
+
 use crate::JobId;
 use std::fs;
 use std::io;
@@ -13,6 +19,12 @@ pub struct Workspace {
 }
 
 impl Workspace {
+    /// Creates a new, empty workspace for `job_id` inside `root`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `root` cannot be created or a workspace for this
+    /// job already exists.
     pub fn create(root: &Path, job_id: &JobId) -> io::Result<Self> {
         fs::create_dir_all(root)?;
         let path = root.join(format!("{PREFIX}{}", job_id.as_str()));
@@ -23,10 +35,19 @@ impl Workspace {
         })
     }
 
+    /// Returns the workspace directory.
     pub fn path(&self) -> &Path {
         &self.path
     }
 
+    /// Removes the workspace and everything in it.
+    ///
+    /// Idempotent: a workspace that is already gone counts as cleaned.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the directory exists but cannot be removed. The
+    /// workspace then stays dirty and removal is retried when it is dropped.
     pub fn cleanup(&mut self) -> io::Result<()> {
         match fs::remove_dir_all(&self.path) {
             Ok(()) => {
@@ -43,6 +64,13 @@ impl Workspace {
 
     /// Removes directories created by PaperWarden in a dedicated workspace root.
     /// Symlinks and unrelated entries are deliberately left untouched.
+    ///
+    /// Returns the number of directories removed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `root` cannot be read or a stale directory cannot
+    /// be removed.
     pub fn recover_stale(root: &Path) -> io::Result<usize> {
         if !root.exists() {
             return Ok(0);

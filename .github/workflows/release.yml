@@ -38,9 +38,9 @@ jobs:
       - name: Rust gates
         working-directory: core
         run: |
-          cargo fmt --check
-          cargo clippy --all-targets --all-features -- -D warnings
-          cargo test --all-features --locked
+          cargo fmt --all --check
+          cargo clippy --workspace --all-targets --all-features -- -D warnings
+          cargo test --workspace --all-features --locked
       - name: Flutter gates
         working-directory: apps/mobile
         run: |

@@ -39,9 +39,9 @@ milestone in `ROADMAP.md`.
 
 ```sh
 cd core
-cargo fmt --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-features
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace --all-features --locked
 ```
 
 ```sh
