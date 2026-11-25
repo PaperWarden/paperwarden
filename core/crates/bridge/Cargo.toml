@@ -1,5 +1,7 @@
 [package]
-name = "paperwarden-bridge"
+# Must equal the [lib] name: Cargokit looks for lib<package-name>.so and
+# silently ships nothing if they differ.
+name = "paperwarden_bridge"
 version = "0.0.1"
 description = "The generated Flutter-to-Rust contract for the PaperWarden core."
 edition.workspace = true

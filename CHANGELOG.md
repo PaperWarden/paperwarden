@@ -19,3 +19,8 @@ All notable changes will be documented here after the first release baseline.
 - Configured the Rust core as a Cargo workspace with a shared lint policy that
   forbids unsafe code, panics, network sockets and subprocesses in production
   code, plus documented module boundaries and test conventions.
+- Prototyped the Flutter-Rust bridge (flutter_rust_bridge 2.13.0 with
+  Cargokit): sync and async calls, cancellation and typed errors, proven on an
+  Android emulator. CI now checks generated bindings, the Android APK's Rust
+  libraries and the iOS link. The license check now covers every locked
+  version of a package.

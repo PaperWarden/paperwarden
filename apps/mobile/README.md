@@ -20,6 +20,14 @@ OpenCV remain gated by the M0 feasibility issues.
 - `lib/screens/` holds one widget per tab, plus the offline privacy policy.
 - `assets/legal/PRIVACY.md` is a bundled copy of the repository's `PRIVACY.md`;
   a test fails if they differ, so edit both together.
+- `lib/src/rust/` holds the generated bindings to the Rust core. Do not edit
+  them; change `core/crates/bridge/src/api` and run
+  `flutter_rust_bridge_codegen generate` here (version 2.13.0). CI fails if the
+  committed bindings are stale.
+- `rust_builder/` is the Cargokit plugin that builds the Rust core into the
+  app. Building needs Rust 1.98.0 with the Android (or iOS) targets and the NDK.
+- `integration_test/bridge_test.dart` checks the bridge on a device:
+  `flutter test integration_test -d <device>`.
 - `lib/app_info.dart` holds the version shown in Settings; a test keeps it equal
   to `pubspec.yaml`.
 

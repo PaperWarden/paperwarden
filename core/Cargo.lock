@@ -370,16 +370,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "paperwarden-bridge"
+name = "paperwarden-core"
+version = "0.0.1"
+
+[[package]]
+name = "paperwarden_bridge"
 version = "0.0.1"
 dependencies = [
  "flutter_rust_bridge",
  "paperwarden-core",
 ]
-
-[[package]]
-name = "paperwarden-core"
-version = "0.0.1"
 
 [[package]]
 name = "pin-project-lite"
