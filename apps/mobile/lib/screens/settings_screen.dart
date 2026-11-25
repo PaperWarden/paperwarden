@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app_info.dart';
 import '../theme/palette.dart';
-import '../theme/theme_controller.dart';
+import '../theme/theme_mode_provider.dart';
 import '../theme/tokens.dart';
 import '../widgets/grouped_list.dart';
 import '../widgets/page_scaffold.dart';
@@ -14,12 +15,12 @@ import 'privacy_policy_screen.dart';
 /// Only the theme, version and privacy policy work today. App Lock, export
 /// and storage settings are "Coming soon" until those features exist; Clear
 /// cache will call the core's workspace recovery once the bridge (#12) lands.
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final theme = ThemeScope.of(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
     return PageScaffold(
       title: 'Settings',
       showBrandBar: false,
@@ -42,8 +43,8 @@ class SettingsScreen extends StatelessWidget {
         GroupedList(children: [
           ListRow(
             title: 'Theme',
-            value: theme.value.label,
-            onTap: () => _chooseTheme(context, theme),
+            value: themeMode.label,
+            onTap: () => _chooseTheme(context, ref, themeMode),
           ),
         ]),
         const SectionHeading('Export'),
@@ -83,16 +84,19 @@ class SettingsScreen extends StatelessWidget {
 
   static Future<void> _chooseTheme(
     BuildContext context,
-    ThemeController theme,
+    WidgetRef ref,
+    ThemeMode current,
   ) {
     return showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (sheetContext) => SafeArea(
         child: RadioGroup<ThemeMode>(
-          groupValue: theme.value,
+          groupValue: current,
           onChanged: (mode) {
-            if (mode != null) theme.value = mode;
+            if (mode != null) {
+              ref.read(themeModeProvider.notifier).select(mode);
+            }
             Navigator.of(sheetContext).pop();
           },
           child: Column(

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paperwarden/app.dart';
 import 'package:paperwarden/app_info.dart';
@@ -9,7 +10,7 @@ import 'package:paperwarden/screens/settings_screen.dart';
 import 'package:paperwarden/widgets/grouped_list.dart';
 
 Future<void> _openSettings(WidgetTester tester) async {
-  await tester.pumpWidget(const PaperWardenApp());
+  await tester.pumpWidget(const ProviderScope(child: PaperWardenApp()));
   await tester.tap(find.descendant(
     of: find.byType(NavigationBar),
     matching: find.text('Settings'),

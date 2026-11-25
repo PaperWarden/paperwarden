@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paperwarden/app.dart';
 import 'package:paperwarden/screens/files_screen.dart';
@@ -23,7 +24,7 @@ Future<void> _openTools(WidgetTester tester) async {
 void main() {
   group('Home', () {
     testWidgets('offers Scan, Files and Convert quick actions', (tester) async {
-      await tester.pumpWidget(const PaperWardenApp());
+      await tester.pumpWidget(const ProviderScope(child: PaperWardenApp()));
 
       expect(find.text('Quick actions'), findsOneWidget);
       for (final label in ['Scan', 'Files', 'Convert']) {
@@ -32,7 +33,7 @@ void main() {
     });
 
     testWidgets('the Files quick action opens the Files tab', (tester) async {
-      await tester.pumpWidget(const PaperWardenApp());
+      await tester.pumpWidget(const ProviderScope(child: PaperWardenApp()));
 
       await tester.tap(_quickAction('Files'));
       await tester.pumpAndSettle();
@@ -43,7 +44,7 @@ void main() {
 
     testWidgets('Scan and Convert are coming soon and cannot be opened',
         (tester) async {
-      await tester.pumpWidget(const PaperWardenApp());
+      await tester.pumpWidget(const ProviderScope(child: PaperWardenApp()));
       final navigator = tester.state<NavigatorState>(find.byType(Navigator));
 
       for (final label in ['Scan', 'Convert']) {
@@ -65,7 +66,7 @@ void main() {
     });
 
     testWidgets('Recent documents starts empty', (tester) async {
-      await tester.pumpWidget(const PaperWardenApp());
+      await tester.pumpWidget(const ProviderScope(child: PaperWardenApp()));
 
       expect(find.text('Recent documents'), findsOneWidget);
       expect(find.text('No recent documents'), findsOneWidget);
@@ -76,7 +77,7 @@ void main() {
     const tools = ['Convert', 'PDF Tools', 'Scan & OCR', 'Privacy', 'Sign'];
 
     testWidgets('shows the privacy banner and every tool', (tester) async {
-      await tester.pumpWidget(const PaperWardenApp());
+      await tester.pumpWidget(const ProviderScope(child: PaperWardenApp()));
       await _openTools(tester);
 
       expect(find.text('Everything you need for documents.'), findsOneWidget);
@@ -94,7 +95,7 @@ void main() {
     });
 
     testWidgets('no unbuilt tool can be opened', (tester) async {
-      await tester.pumpWidget(const PaperWardenApp());
+      await tester.pumpWidget(const ProviderScope(child: PaperWardenApp()));
       await _openTools(tester);
       final navigator = tester.state<NavigatorState>(find.byType(Navigator));
 

@@ -15,3 +15,4 @@ All notable changes will be documented here after the first release baseline.
 - Built the Settings tab: a System, Light or Dark theme choice that applies
   immediately, the app version, and the privacy policy bundled for offline
   reading. Security, export and storage settings are marked "Coming soon".
+- Adopted Riverpod (`flutter_riverpod` 3.5.0, MIT) for app state.
