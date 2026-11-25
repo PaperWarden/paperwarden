@@ -16,6 +16,7 @@ shared lint policy with `[lints] workspace = true`. The fuzz harnesses in
 
 | Module | Owns | Must not |
 | --- | --- | --- |
+| `cancel` | Cooperative cancellation tokens shared by the UI and workers | Clean up; the job owner does |
 | `job` | Job identifiers and the lifecycle state machine | Perform I/O |
 | `workspace` | Creating, cleaning and recovering on-disk job workspaces | Know about formats or engines |
 
