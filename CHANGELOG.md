@@ -12,3 +12,6 @@ All notable changes will be documented here after the first release baseline.
   feasibility.
 - Built the Files tab layout (search, filters, folders and recent files) with
   empty states; it reads no files until the library model is decided.
+- Built the Settings tab: a System, Light or Dark theme choice that applies
+  immediately, the app version, and the privacy policy bundled for offline
+  reading. Security, export and storage settings are marked "Coming soon".

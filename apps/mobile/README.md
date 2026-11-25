@@ -17,7 +17,11 @@ OpenCV remain gated by the M0 feasibility issues.
   switching keeps their state; `ShellScope.select` switches tabs from anywhere.
 - `lib/widgets/` holds the shared building blocks: page scaffold, section
   heading, grouped list rows, hero card, trust footer and file-type badge.
-- `lib/screens/` holds one widget per tab.
+- `lib/screens/` holds one widget per tab, plus the offline privacy policy.
+- `assets/legal/PRIVACY.md` is a bundled copy of the repository's `PRIVACY.md`;
+  a test fails if they differ, so edit both together.
+- `lib/app_info.dart` holds the version shown in Settings; a test keeps it equal
+  to `pubspec.yaml`.
 
 Unbuilt capabilities use `ListRow(comingSoon: true)`: visible, labeled and not
 tappable, so the UI never advertises a feature before its engine passes
