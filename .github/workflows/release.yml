@@ -1,0 +1,61 @@
+name: Release gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_ref:
+        description: Existing tag or commit to verify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-gate
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.release_ref }}
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with: {python-version: "3.13"}
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable action
+        with: {toolchain: "1.98.0", components: rustfmt, clippy}
+      - name: Install verified Flutter SDK
+        run: .github/scripts/setup_flutter.sh
+      - name: Product invariants
+        run: python scripts/check_invariants.py
+      - name: Corpus and license gates
+        run: |
+          python scripts/check_corpus.py
+          python scripts/check_licenses.py
+      - name: Rust gates
+        working-directory: core
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets --all-features -- -D warnings
+          cargo test --all-features --locked
+      - name: Flutter gates
+        working-directory: apps/mobile
+        run: |
+          flutter pub get
+          dart format --output=none --set-exit-if-changed .
+          flutter analyze
+          flutter test
+      - name: Record verified revision
+        run: |
+          git rev-parse HEAD > verified-commit.txt
+          sha256sum core/Cargo.lock apps/mobile/pubspec.yaml > foundation-checksums.sha256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-gate-foundation
+          path: |
+            verified-commit.txt
+            foundation-checksums.sha256
+          if-no-files-found: error
