@@ -83,7 +83,18 @@ void main() {
 
   testWidgets('shows the on-device promise', (tester) async {
     await tester.pumpWidget(const PaperWardenApp());
+    final footer = find.text('Processed on this device');
+    await tester.scrollUntilVisible(
+      footer,
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byType(HomeScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
 
-    expect(find.text('Processed on this device'), findsOneWidget);
+    expect(footer, findsOneWidget);
   });
 }
