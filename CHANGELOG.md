@@ -16,3 +16,6 @@ All notable changes will be documented here after the first release baseline.
   immediately, the app version, and the privacy policy bundled for offline
   reading. Security, export and storage settings are marked "Coming soon".
 - Adopted Riverpod (`flutter_riverpod` 3.5.0, MIT) for app state.
+- Configured the Rust core as a Cargo workspace with a shared lint policy that
+  forbids unsafe code, panics, network sockets and subprocesses in production
+  code, plus documented module boundaries and test conventions.
