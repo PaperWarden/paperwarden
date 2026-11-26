@@ -477,7 +477,7 @@ def archive_fixtures() -> list[Fixture]:
                 "Names that collide on case-insensitive file systems such as iOS's default",
                 "Never let one entry overwrite the other (create files with create_new)"),
         Fixture("security/archive/bidi-filename.zip",
-                zip_bytes([("invoice‮fdp.exe", b"not a pdf\n")]),
+                zip_bytes([("invoice\u202efdp.exe", b"not a pdf\n")]),
                 "Name with a right-to-left override that displays as 'invoiceexe.pdf'",
                 "Refuse the entry; never show a disguised extension"),
     ]
