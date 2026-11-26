@@ -99,6 +99,11 @@ jobs:
           if otool -L "$framework/pdfium" | tail -n +2 | grep -v -e '@rpath/pdfium.framework' -e '/System/Library/Frameworks/' -e '/usr/lib/libSystem'; then
             echo "PDFium links an unexpected library" >&2; exit 1
           fi
+          # PDFium must not import any network API (PRODUCT_INVARIANTS.md 1).
+          nm -u "$framework/pdfium" | sed 's/^ *U //' > "$EVIDENCE/ios-imports.txt"
+          if grep -E '^_(socket|connect|getaddrinfo|gethostbyname|CFSocket|CFStream|CFHTTP|nw_|SCNetwork)' "$EVIDENCE/ios-imports.txt"; then
+            echo "PDFium imports a network API" >&2; exit 1
+          fi
           # An app embeds and signs the framework; ad hoc signing proves it can be.
           cp -R "$framework" "$RUNNER_TEMP/pdfium.framework"
           codesign --force --sign - --timestamp=none "$RUNNER_TEMP/pdfium.framework"
