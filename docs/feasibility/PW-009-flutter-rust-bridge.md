@@ -18,7 +18,8 @@ only (macOS runner); no local iOS run was possible from the Windows machine.
   library before the first frame.
 
 The probe API processes no documents. It exists to prove each criterion below
-and is replaced by real job APIs in #33.
+and is replaced by real job APIs once the first engine runs through the job
+runner from #33.
 
 ## Criteria
 
@@ -95,7 +96,8 @@ is recorded in `third_party/dependencies.json`.
 
 ## Follow-ups
 
-- #33: replace the probe API with the job skeleton's real API.
+- Expose the job runner (#33) through the bridge with the first real engine,
+  replacing the probe API. Run `JobRunner::recover` at app startup then.
 - Add the `Bridge` workflow's `bindings` check to the required status checks.
 - Cache the `flutter_rust_bridge_codegen` install in CI (about 5 minutes
   uncached).

@@ -12,7 +12,7 @@ fn completed_job_leaves_no_workspace_behind() {
     let id = JobId::new("complete-1").expect("valid id");
     let mut workspace = Workspace::create(&root, &id).expect("workspace created");
     let mut job = Job::new(id, root.join("input.pdf"), workspace.path().to_path_buf());
-    fs::write(workspace.path().join("output.bin"), b"synthetic").expect("write output");
+    fs::write(workspace.output_dir().join("output"), b"synthetic").expect("write output");
 
     for state in [
         JobState::Validated,
@@ -39,7 +39,7 @@ fn failed_job_workspace_is_removed_when_dropped() {
     {
         let workspace = Workspace::create(&root, &id).expect("workspace created");
         job = Job::new(id, root.join("input.pdf"), workspace.path().to_path_buf());
-        fs::write(workspace.path().join("partial.bin"), b"partial").expect("write partial");
+        fs::write(workspace.output_dir().join("partial"), b"partial").expect("write partial");
         job.transition(JobState::Validated).expect("validated");
         job.transition(JobState::Failed).expect("failure allowed");
     }
@@ -56,7 +56,7 @@ fn restart_recovery_removes_a_workspace_abandoned_by_a_crash() {
     let workspace = Workspace::create(&root, &JobId::new("abandoned-1").expect("valid id"))
         .expect("workspace created");
     let path = workspace.path().to_path_buf();
-    fs::write(path.join("sensitive.bin"), b"residual").expect("write residual data");
+    fs::write(workspace.input_dir().join("input"), b"residual").expect("write residual data");
     #[allow(
         clippy::mem_forget,
         reason = "simulates a process crash, where Drop never runs"
@@ -64,9 +64,9 @@ fn restart_recovery_removes_a_workspace_abandoned_by_a_crash() {
     std::mem::forget(workspace);
     assert!(path.exists(), "crash left the workspace behind");
 
-    let removed = Workspace::recover_stale(&root).expect("recovery succeeds");
+    let report = Workspace::recover_stale(&root).expect("recovery succeeds");
 
-    assert_eq!(removed, 1);
+    assert_eq!(report.removed, 1);
     assert!(!path.exists());
     fs::remove_dir(&root).expect("recovery left the root empty");
 }

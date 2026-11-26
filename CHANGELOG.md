@@ -24,3 +24,6 @@ All notable changes will be documented here after the first release baseline.
   Android emulator. CI now checks generated bindings, the Android APK's Rust
   libraries and the iOS link. The license check now covers every locked
   version of a package.
+- Added the isolated processing-job skeleton: content-based validation,
+  bounded processors with cancellation and time limits, output verification,
+  export that never overwrites, guaranteed cleanup and crash recovery.
