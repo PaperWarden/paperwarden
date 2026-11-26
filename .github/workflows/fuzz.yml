@@ -41,10 +41,12 @@ jobs:
         with: {toolchain: "nightly-2026-08-26"}
       # Built from crates.io sources with its lockfile.
       - run: cargo install cargo-fuzz --version 0.13.2 --locked
+      # rust-toolchain.toml pins stable for the repository; cargo-fuzz needs
+      # the pinned nightly named explicitly.
       - name: Fuzz ${{ matrix.target }}
         run: |
           mkdir -p "../fuzz/corpus/$TARGET"
-          cargo fuzz run --fuzz-dir ../fuzz "$TARGET" \
+          cargo +nightly-2026-08-26 fuzz run --fuzz-dir ../fuzz "$TARGET" \
             "../fuzz/corpus/$TARGET" "../fuzz/seeds/$TARGET" -- \
             -max_total_time="$SECONDS_TO_RUN" -max_len=8192 -timeout=10 -rss_limit_mb=2048
       - name: Upload crashing input
