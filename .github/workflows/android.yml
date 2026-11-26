@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "apps/mobile/**"
+      - "scripts/check_invariants.py"
       - ".github/workflows/android.yml"
   push:
     branches: [main]
     paths:
       - "apps/mobile/**"
+      - "scripts/check_invariants.py"
       - ".github/workflows/android.yml"
 
 permissions:
@@ -35,6 +37,12 @@ jobs:
             echo 'Production INTERNET permission is forbidden.' >&2
             exit 1
           fi
+      # Plugins from the pub cache can add permissions that no file in this
+      # repository shows. Check the manifest Gradle merges for release.
+      - name: Merged release manifest requests no forbidden permission
+        run: |
+          ./android/gradlew -p android :app:processReleaseMainManifest
+          python3 ../../scripts/check_invariants.py --android-merged-manifest             build/app/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml
       - run: flutter build apk --debug
       - name: Android lint
         run: ./android/gradlew -p android lintDebug
