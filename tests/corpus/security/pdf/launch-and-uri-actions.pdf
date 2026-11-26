@@ -1,0 +1,37 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /OpenAction << /S /Launch /F (paperwarden-inert-launch-target) >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 100] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R /Annots [6 0 R] >>
+endobj
+5 0 obj
+<< /Length 48 >>
+stream
+BT /F1 14 Tf 20 50 Td (PaperWarden corpus) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Annot /Subtype /Link /Rect [0 0 300 100] /A << /S /URI /URI (https://paperwarden.invalid/remote-link) >> >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000015 00000 n 
+0000000130 00000 n 
+0000000187 00000 n 
+0000000257 00000 n 
+0000000399 00000 n 
+0000000497 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+630
+%%EOF

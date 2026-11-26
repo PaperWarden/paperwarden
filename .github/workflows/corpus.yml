@@ -15,4 +15,15 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with: {python-version: "3.13"}
-      - run: python scripts/check_corpus.py
+      - name: Self-test the corpus checks
+        run: python -m unittest discover -s tests/scripts -p "test_check_corpus.py" -v
+      - run: python scripts/check_corpus.py --report corpus-report.json
+      # Per-fixture results, kept for 14 days (docs/ci/corpus.md, retention).
+      - name: Upload corpus report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: corpus-report
+          path: corpus-report.json
+          if-no-files-found: ignore
+          retention-days: 14
