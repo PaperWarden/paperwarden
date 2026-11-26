@@ -6,8 +6,9 @@
 //! pdf_probe <libpdfium> <pdf> <out-dir> [max-width max-height]
 //! ```
 //!
-//! Run one process per file so peak memory (Linux and Android `VmHWM`) is per
-//! file. The first page of an exported job is written to `<out-dir>` as PPM.
+//! Run one process per file so peak memory (`VmHWM` on Linux and Android,
+//! `ru_maxrss` on iOS and macOS) is per file. The first page of an exported
+//! job is written to `<out-dir>` as PPM.
 
 use paperwarden_core::validation::MagicBytes;
 use paperwarden_core::{CancellationToken, JobId, JobLimits, JobRunner, Operation, Outcome};
@@ -33,10 +34,20 @@ fn json_string(value: &str) -> String {
 }
 
 /// Peak resident memory of this process in KiB, where the OS reports it.
+#[cfg(not(target_vendor = "apple"))]
 fn peak_rss_kib() -> Option<u64> {
     let status = std::fs::read_to_string("/proc/self/status").ok()?;
     let line = status.lines().find(|line| line.starts_with("VmHWM:"))?;
     line.split_whitespace().nth(1)?.parse().ok()
+}
+
+/// Peak resident memory of this process in KiB. Apple platforms have no
+/// `/proc`; `getrusage` reports `ru_maxrss` there in bytes.
+#[cfg(target_vendor = "apple")]
+fn peak_rss_kib() -> Option<u64> {
+    use nix::sys::resource::{getrusage, UsageWho};
+    let bytes = getrusage(UsageWho::RUSAGE_SELF).ok()?.max_rss();
+    u64::try_from(bytes).ok().map(|bytes| bytes / 1024)
 }
 
 #[allow(
