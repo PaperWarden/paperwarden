@@ -45,3 +45,8 @@ All notable changes will be documented here after the first release baseline.
   every fact against the fixture bytes, self-tests the checker, reports engine
   outcomes as pending until engines exist, and keeps a per-fixture report for
   14 days.
+- Proved PDFium rendering on Android (`paperwarden-pdf`, PW-010): pinned,
+  verified non-V8 builds fetched by `scripts/fetch_pdfium.py`, renders bounded
+  by PaperWarden, and the first engine run over the corpus through the job
+  runner, with evidence kept in `docs/feasibility/evidence/PW-010/`. Added two
+  stress PDFs and an extreme page-size fixture to the corpus.

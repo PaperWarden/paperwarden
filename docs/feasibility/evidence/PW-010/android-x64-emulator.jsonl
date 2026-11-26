@@ -1,0 +1,16 @@
+{"file":"corpus/malformed/pdf/bad-xref-offsets.pdf","outcome":"exported","pages":1,"rendered":1,"open_ms":65.1,"render_ms":7.2,"peak_rss_kib":12640,"first_page_text":"PaperWarden corpus"}
+{"file":"corpus/malformed/pdf/header-only.pdf","outcome":"stopped: the PDF could not be opened","pages":0,"rendered":0,"open_ms":0.0,"render_ms":0.0,"peak_rss_kib":8308,"first_page_text":null}
+{"file":"corpus/malformed/pdf/no-eof-marker.pdf","outcome":"exported","pages":1,"rendered":1,"open_ms":4.7,"render_ms":3.4,"peak_rss_kib":12908,"first_page_text":"PaperWarden corpus"}
+{"file":"corpus/malformed/truncated.pdf","outcome":"stopped: the PDF could not be opened","pages":0,"rendered":0,"open_ms":0.0,"render_ms":0.0,"peak_rss_kib":8316,"first_page_text":null}
+{"file":"corpus/security/pdf/deep-nesting.pdf","outcome":"exported","pages":1,"rendered":1,"open_ms":6.7,"render_ms":5.4,"peak_rss_kib":13040,"first_page_text":"PaperWarden corpus"}
+{"file":"corpus/security/pdf/extreme-page-size.pdf","outcome":"stopped: a page could not be rendered","pages":2,"rendered":0,"open_ms":3.9,"render_ms":0.0,"peak_rss_kib":9728,"first_page_text":""}
+{"file":"corpus/security/pdf/flate-bomb.pdf","outcome":"exported","pages":1,"rendered":1,"open_ms":4.3,"render_ms":71.4,"peak_rss_kib":42504,"first_page_text":""}
+{"file":"corpus/security/pdf/javascript-openaction.pdf","outcome":"exported","pages":1,"rendered":1,"open_ms":4.3,"render_ms":4.4,"peak_rss_kib":12900,"first_page_text":"PaperWarden corpus"}
+{"file":"corpus/security/pdf/launch-and-uri-actions.pdf","outcome":"exported","pages":1,"rendered":1,"open_ms":5.9,"render_ms":5.3,"peak_rss_kib":13056,"first_page_text":"PaperWarden corpus"}
+{"file":"corpus/security/pdf/stream-length-overflow.pdf","outcome":"exported","pages":1,"rendered":1,"open_ms":4.9,"render_ms":3.7,"peak_rss_kib":13056,"first_page_text":"PaperWarden corpus"}
+{"file":"corpus/security/pdf/xref-prev-loop.pdf","outcome":"exported","pages":1,"rendered":1,"open_ms":6.6,"render_ms":6.3,"peak_rss_kib":13056,"first_page_text":"PaperWarden corpus"}
+{"file":"corpus/valid/pdf/incremental-update.pdf","outcome":"exported","pages":1,"rendered":1,"open_ms":6.1,"render_ms":4.2,"peak_rss_kib":12784,"first_page_text":"PaperWarden corpus, revised"}
+{"file":"corpus/valid/pdf/large-image.pdf","outcome":"exported","pages":1,"rendered":1,"open_ms":4.5,"render_ms":195.1,"peak_rss_kib":75516,"first_page_text":""}
+{"file":"corpus/valid/pdf/many-pages-200.pdf","outcome":"exported","pages":200,"rendered":200,"open_ms":4.2,"render_ms":543.5,"peak_rss_kib":14668,"first_page_text":"Page 1"}
+{"file":"corpus/valid/pdf/one-page.pdf","outcome":"exported","pages":1,"rendered":1,"open_ms":4.4,"render_ms":3.9,"peak_rss_kib":12928,"first_page_text":"PaperWarden corpus"}
+{"file":"corpus/valid/pdf/two-pages-flate.pdf","outcome":"exported","pages":2,"rendered":2,"open_ms":4.3,"render_ms":5.8,"peak_rss_kib":14392,"first_page_text":"Page one"}

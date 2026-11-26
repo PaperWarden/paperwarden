@@ -15,6 +15,11 @@ shared lint policy with `[lints] workspace = true`.
 history, workflows and the optional contentless FTS5 index, on SQLite compiled
 from source (ADR-0006, Proposed).
 
+`core/crates/pdf` (`paperwarden-pdf`) renders PDF pages and extracts text with
+PDFium, loaded at run time from a library fetched by `scripts/fetch_pdfium.py`
+(ADR-0007, Proposed). Its PDFium tests are ignored unless
+`PAPERWARDEN_PDFIUM_LIB` names that library.
+
 `core/crates/bridge` (`paperwarden_bridge`) is the Flutter-Rust bridge
 (ADR-0005). Its hand-written API lives in `src/api`; `src/frb_generated.rs`
 is generated. It defines its own lint table because generated FFI glue needs

@@ -165,6 +165,30 @@ def pdf_fixtures() -> list[Fixture]:
 
     two_pages, _, _ = pdf_document(page_objects(["Page one", "Page two"], flate=True))
 
+    # A sliver page and a page of a million points square: rendering at a
+    # target width would ask for an enormous bitmap.
+    extreme_objects = page_objects(["Thin", "Huge"])
+    extreme_objects[3] = extreme_objects[3].replace(b"[0 0 300 100]", b"[0 0 1 14400]")
+    extreme_objects[5] = extreme_objects[5].replace(b"[0 0 300 100]", b"[0 0 1000000 1000000]")
+    extreme, _, _ = pdf_document(extreme_objects)
+
+    many_pages, _, _ = pdf_document(page_objects([f"Page {number}" for number in range(1, 201)]))
+
+    # One page showing a 4000 x 4000 RGB image (48 MB decoded, like a 300 dpi
+    # A4 scan). Identical striped rows keep the file small.
+    side = 4000
+    row = bytes(channel for x in range(side) for channel in ((x // 250 * 37) % 256, 90, 200 - (x // 250) * 9))
+    image = zlib.compress(row * side, 9)
+    image_objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>",
+        pdf_stream(b"q 595 0 0 595 0 123 cm /Im0 Do Q"),
+        pdf_stream(image, f"/Type /XObject /Subtype /Image /Width {side} /Height {side} "
+                   "/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode "),
+    ]
+    large_image, _, _ = pdf_document(image_objects)
+
     return [
         Fixture("valid/pdf/one-page.pdf", one_page,
                 "Smallest well-formed PDF with one text page and a correct cross-reference table",
@@ -172,6 +196,12 @@ def pdf_fixtures() -> list[Fixture]:
         Fixture("valid/pdf/two-pages-flate.pdf", two_pages,
                 "Two pages with FlateDecode content streams",
                 "Accept; two pages with text 'Page one' and 'Page two'"),
+        Fixture("valid/pdf/many-pages-200.pdf", many_pages,
+                "200 text pages, for open, render and memory measurements",
+                "Accept; 200 pages, page N reading 'Page N'"),
+        Fixture("valid/pdf/large-image.pdf", large_image,
+                "A4 page showing a 4000 x 4000 RGB image (48 MB decoded), like a scanned page",
+                "Accept; render within the pixel bound, decoding the image without exhausting memory"),
         Fixture("valid/pdf/incremental-update.pdf", incremental,
                 "Incremental update that replaces the page content through a /Prev cross-reference chain",
                 "Accept; the newest revision's text 'PaperWarden corpus, revised' wins"),
@@ -199,6 +229,9 @@ def pdf_fixtures() -> list[Fixture]:
         Fixture("security/pdf/flate-bomb.pdf", bomb,
                 "Content stream that inflates from about 16 KiB to 16 MiB",
                 "Stop at the decompressed-size bound before allocating it all"),
+        Fixture("security/pdf/extreme-page-size.pdf", extreme,
+                "A 1 x 14,400 pt page and a 1,000,000 x 1,000,000 pt page",
+                "Render within the pixel bound or refuse the page; never allocate a bitmap from the page size alone"),
         Fixture("security/pdf/stream-length-overflow.pdf", length_overflow,
                 "Stream whose /Length claims 999,999,999 bytes in a small file",
                 "Never trust /Length for allocation or reads past the end of the file"),
@@ -689,6 +722,9 @@ DECLARED: dict[str, dict] = {
     "valid/pdf/incremental-update.pdf": {"facts": {
         "pdf_xref_valid": True, "contains": ["/Prev"],
         "pdf_text": [SAMPLE_TEXT, "PaperWarden corpus, revised"]}},
+    "valid/pdf/many-pages-200.pdf": {"facts": {"pdf_xref_valid": True, "contains": ["/Count 200", "(Page 200) Tj"]}},
+    "valid/pdf/large-image.pdf": {"facts": {
+        "pdf_xref_valid": True, "max_inflated_bytes": 48_000_000, "contains": ["/Width 4000 /Height 4000"]}},
     "malformed/pdf/bad-xref-offsets.pdf": {"facts": {"pdf_xref_valid": False}},
     "malformed/pdf/no-eof-marker.pdf": {"facts": {"absent": ["%%EOF"], "contains": ["startxref"]}},
     "malformed/pdf/header-only.pdf": {"facts": {"pdf_xref_valid": False, "absent": ["obj"]}},
@@ -700,6 +736,8 @@ DECLARED: dict[str, dict] = {
     "security/pdf/deep-nesting.pdf": {"outcome": "bound", "facts": {"max_bracket_depth": 20000}},
     "security/pdf/flate-bomb.pdf": {"outcome": "bound", "facts": {"max_inflated_bytes": 16 * MIB}},
     "security/pdf/stream-length-overflow.pdf": {"outcome": "reject", "facts": {"contains": ["/Length 999999999"]}},
+    "security/pdf/extreme-page-size.pdf": {"outcome": "bound", "facts": {
+        "pdf_xref_valid": True, "contains": ["/MediaBox [0 0 1 14400]", "/MediaBox [0 0 1000000 1000000]"]}},
     # Office
     "valid/office/minimal.docx": {"facts": {"zip_valid": True, "xml_wellformed": True, "zip_entries": [
         "[Content_Types].xml", "_rels/.rels", "word/document.xml"]}},
