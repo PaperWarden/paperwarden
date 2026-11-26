@@ -44,5 +44,8 @@ supported (`PRODUCT_INVARIANTS.md` 12, `SUPPORTED_FORMATS.md`). Where a claim
 cannot be checked without an engine, such as Office viewer acceptance or OCR
 accuracy, `expected` says so.
 
-`manifest.json` is authoritative. CI verifies safe relative paths, uniqueness,
-SHA-256 hashes, provenance, license, purpose, and expected behavior.
+`manifest.json` is authoritative (schema 2). Besides hashes, licenses and
+provenance, each entry records its category, format, expected outcome, the
+engine capability it needs, and structural facts that CI verifies against the
+bytes. [docs/ci/corpus.md](../../docs/ci/corpus.md) defines the schema, what CI
+proves, the contract for engine runners, and artifact retention.
