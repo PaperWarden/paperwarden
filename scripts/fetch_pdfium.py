@@ -23,6 +23,7 @@ import io
 import pathlib
 import sys
 import tarfile
+import urllib.parse
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -47,8 +48,35 @@ KEEP_DIRS = ("lib/", "bin/", "licenses/")
 REQUIRED_ARGS = ("pdf_enable_v8 = false", "pdf_enable_xfa = false")
 
 
+class HttpsOnlyRedirects(urllib.request.HTTPRedirectHandler):
+    """Follow GitHub's redirect to its asset host, but never off HTTPS."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001, ANN201
+        if urllib.parse.urlsplit(newurl).scheme != "https":
+            raise SystemExit(f"refusing a non-HTTPS redirect: {newurl}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def https_opener() -> urllib.request.OpenerDirector:
+    # Built by hand rather than with build_opener() or urlopen(), so there is
+    # no file://, ftp:// or plain http:// handler to reach at all.
+    opener = urllib.request.OpenerDirector()
+    for handler in (
+        urllib.request.HTTPSHandler(),
+        HttpsOnlyRedirects(),
+        urllib.request.HTTPErrorProcessor(),
+        urllib.request.UnknownHandler(),  # any other scheme is an error
+    ):
+        opener.add_handler(handler)
+    return opener
+
+
 def download(url: str) -> bytes:
-    with urllib.request.urlopen(url, timeout=120) as response:  # noqa: S310 - pinned https URL
+    if not url.startswith(SOURCE + "/"):
+        raise SystemExit(f"refusing a URL outside {SOURCE}: {url}")
+    # The URL is SOURCE plus a pinned release and an asset name from ASSETS,
+    # and the opener only speaks HTTPS, so no caller can choose the scheme.
+    with https_opener().open(url, timeout=120) as response:  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         data = response.read(MAX_DOWNLOAD_BYTES + 1)
     if len(data) > MAX_DOWNLOAD_BYTES:
         raise SystemExit(f"download exceeds {MAX_DOWNLOAD_BYTES} bytes")
