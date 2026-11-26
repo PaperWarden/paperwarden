@@ -9,6 +9,7 @@ on:
   pull_request:
     paths:
       - "core/src/**"
+      - "core/crates/**"
       - "core/Cargo.toml"
       - "core/Cargo.lock"
       - "fuzz/**"
@@ -27,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [job_id, archive_entry_path, magic_bytes, job_pipeline]
+        target: [job_id, archive_entry_path, magic_bytes, job_pipeline, store_search]
     # cargo-fuzz needs a Cargo project in the working directory; the fuzz
     # crate lives outside the core workspace, so point at it explicitly.
     defaults:

@@ -1,8 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- App data (settings, job history, the optional search index) never
+         leaves the device: no cloud backup and no device-to-device transfer
+         (PRODUCT_INVARIANTS.md 4, docs/feasibility/PW-017-sqlite-fts.md). -->
     <application
         android:label="PaperWarden"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"

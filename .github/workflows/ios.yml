@@ -47,3 +47,10 @@ jobs:
             echo 'Rust bridge symbols missing from Runner.app' >&2
             exit 1
           fi
+      # The local database (PW-017): its tests pass on Apple's platform and the
+      # bundled SQLite compiles for iOS devices with Xcode's toolchain.
+      - name: Store passes its tests on macOS and builds for iOS
+        working-directory: core
+        run: |
+          cargo test -p paperwarden-store --locked
+          cargo build -p paperwarden-store --release --locked --target aarch64-apple-ios

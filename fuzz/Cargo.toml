@@ -10,6 +10,7 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 paperwarden-core = { path = "../core" }
+paperwarden-store = { path = "../core/crates/store" }
 
 [[bin]]
 name = "job_id"
@@ -35,6 +36,13 @@ bench = false
 [[bin]]
 name = "job_pipeline"
 path = "fuzz_targets/job_pipeline.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "store_search"
+path = "fuzz_targets/store_search.rs"
 test = false
 doc = false
 bench = false
