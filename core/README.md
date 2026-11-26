@@ -31,7 +31,7 @@ must equal its library name, or Cargokit silently ships no library. The fuzz har
 | `engine` | The `Processor` and `OutputVerifier` seam, bounded output writer, checkpoints | Create workspaces or export |
 | `runner` | Driving one job: stage, validate, process, verify, export, clean | Contain format logic |
 | `export` (private) | Copying a verified output to a new file | Overwrite anything |
-| `archive` | Archive entry-path rules (`EntryPath`): relative, bounded, portable names only | Extract; extraction arrives with the archive engine |
+| `archive` | Archive entry-path rules (`EntryPath`): relative, bounded names, UTF-8 or legacy CP437 | Extract; extraction arrives with the archive engine |
 
 How a job runs (`JobRunner::run`):
 

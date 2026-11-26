@@ -29,6 +29,6 @@ All notable changes will be documented here after the first release baseline.
   export that never overwrites, guaranteed cleanup and crash recovery.
 - Added property-checking fuzz targets for job IDs, archive entry paths, the
   content validator and the whole job pipeline, plus archive entry-path rules
-  that block traversal, absolute paths, drive letters, reserved names and
-  text-direction spoofing. Fixed the scheduled fuzz workflow, which had never
+  that block traversal, absolute paths, backslashes, colons, control characters
+  and text-direction spoofing, and decode legacy CP437 names. Fixed the scheduled fuzz workflow, which had never
   run successfully, and added a short fuzz run to pull requests.

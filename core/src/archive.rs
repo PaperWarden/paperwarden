@@ -1,9 +1,16 @@
 //! Archive entry paths (`PRODUCT_INVARIANTS.md` 11).
 //!
-//! [`EntryPath::parse`] decides whether a name read from an archive may become
-//! a file inside a job workspace. It accepts only plain relative paths whose
-//! every component is a portable file name, so the result cannot escape the
-//! extraction directory or alias another file on any supported platform.
+//! [`EntryPath::parse`] and [`EntryPath::parse_cp437`] decide whether a name
+//! read from an archive may become a file inside a job workspace. They accept
+//! only plain relative paths, so the result cannot escape the extraction
+//! directory, and they refuse names that can disguise what a file is.
+//!
+//! The rules target the platforms PaperWarden ships on, Android and iOS.
+//! Characters and device names that only Windows reserves (`<>"|?*`, `CON`,
+//! trailing dots and spaces) are allowed; revisit them if a Windows build is
+//! ever added. Because names that differ only in case can still collide on a
+//! case-insensitive file system, extraction must create every file with
+//! `create_new` and never overwrite.
 //!
 //! This is the path rule only. Extraction itself, links, nesting of archives
 //! and decompression bounds arrive with the archive engine.
@@ -11,14 +18,14 @@
 use std::fmt;
 use std::path::PathBuf;
 
-/// Longest entry name accepted, in bytes.
+/// Longest entry name accepted, in bytes of UTF-8.
 pub const MAX_PATH_BYTES: usize = 1024;
-/// Longest single path component accepted, in bytes.
+/// Longest single path component accepted, in bytes of UTF-8.
 pub const MAX_COMPONENT_BYTES: usize = 255;
 /// Deepest directory nesting accepted.
 pub const MAX_DEPTH: usize = 32;
 
-/// A validated archive entry path: relative, normalised and portable.
+/// A validated archive entry path: relative and normalised.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EntryPath {
     components: Vec<String>,
@@ -36,7 +43,8 @@ pub enum EntryPathError {
     ComponentTooLong,
     /// The path nests deeper than [`MAX_DEPTH`].
     TooDeep,
-    /// The name is not valid UTF-8; callers decode legacy encodings first.
+    /// The name is not valid UTF-8. Archives that store legacy names (a ZIP
+    /// entry without the UTF-8 flag) go through [`EntryPath::parse_cp437`].
     NotUtf8,
     /// The path starts at a root, such as `/etc/passwd`.
     Absolute,
@@ -44,21 +52,17 @@ pub enum EntryPathError {
     Traversal,
     /// The path contains an empty or `.` component, such as `a//b` or `./a`.
     NotNormalised,
-    /// The path uses `\`, which is a separator on Windows.
+    /// The path uses `\`, which is a separator on Windows and in archives
+    /// written by some Windows tools.
     Backslash,
+    /// The path contains `:`, which names a drive or an alternate data stream
+    /// on Windows and is shown as `/` by macOS and iOS file browsers.
+    Colon,
     /// The path contains a control character, including NUL.
     ControlCharacter,
     /// The path contains a bidirectional-text control that can disguise a
     /// file's real extension.
     BidiControl,
-    /// The path contains `:` or another character that Windows or Android
-    /// storage reserves, such as a drive letter or an alternate data stream.
-    ReservedCharacter,
-    /// A component is a reserved device name, such as `CON` or `nul.txt`.
-    ReservedName,
-    /// A component ends with `.` or a space, which Windows strips, so two
-    /// entries could name the same file.
-    TrailingDotOrSpace,
 }
 
 impl fmt::Display for EntryPathError {
@@ -73,11 +77,9 @@ impl fmt::Display for EntryPathError {
             Self::Traversal => "archive entry points outside the archive",
             Self::NotNormalised => "archive entry path has empty or '.' parts",
             Self::Backslash => "archive entry path contains a backslash",
+            Self::Colon => "archive entry name contains a colon",
             Self::ControlCharacter => "archive entry name contains a control character",
             Self::BidiControl => "archive entry name contains a text-direction control",
-            Self::ReservedCharacter => "archive entry name contains a reserved character",
-            Self::ReservedName => "archive entry uses a reserved device name",
-            Self::TrailingDotOrSpace => "archive entry name ends with a dot or space",
         })
     }
 }
@@ -85,19 +87,43 @@ impl fmt::Display for EntryPathError {
 impl std::error::Error for EntryPathError {}
 
 impl EntryPath {
-    /// Validates a raw entry name. A single trailing `/` marks a directory.
+    /// Validates a UTF-8 entry name. A single trailing `/` marks a directory.
     ///
     /// # Errors
     ///
     /// Returns the first rule the name breaks.
     pub fn parse(raw: &[u8]) -> Result<Self, EntryPathError> {
-        if raw.is_empty() {
-            return Err(EntryPathError::Empty);
-        }
         if raw.len() > MAX_PATH_BYTES {
             return Err(EntryPathError::TooLong);
         }
         let text = std::str::from_utf8(raw).map_err(|_| EntryPathError::NotUtf8)?;
+        Self::parse_text(text)
+    }
+
+    /// Decodes a legacy entry name as code page 437, the ZIP default when an
+    /// entry's UTF-8 flag is not set, then validates it like [`parse`].
+    /// Decoding never fails; every rule applies to the decoded name.
+    ///
+    /// # Errors
+    ///
+    /// Returns the first rule the decoded name breaks.
+    ///
+    /// [`parse`]: Self::parse
+    pub fn parse_cp437(raw: &[u8]) -> Result<Self, EntryPathError> {
+        if raw.len() > MAX_PATH_BYTES {
+            return Err(EntryPathError::TooLong);
+        }
+        let text: String = raw.iter().map(|&byte| decode_cp437(byte)).collect();
+        Self::parse_text(&text)
+    }
+
+    fn parse_text(text: &str) -> Result<Self, EntryPathError> {
+        if text.is_empty() {
+            return Err(EntryPathError::Empty);
+        }
+        if text.len() > MAX_PATH_BYTES {
+            return Err(EntryPathError::TooLong);
+        }
         for character in text.chars() {
             check_character(character)?;
         }
@@ -111,7 +137,14 @@ impl EntryPath {
 
         let mut components = Vec::new();
         for component in body.split('/') {
-            check_component(component)?;
+            match component {
+                "" | "." => return Err(EntryPathError::NotNormalised),
+                ".." => return Err(EntryPathError::Traversal),
+                _ if component.len() > MAX_COMPONENT_BYTES => {
+                    return Err(EntryPathError::ComponentTooLong)
+                }
+                _ => {}
+            }
             if components.len() >= MAX_DEPTH {
                 return Err(EntryPathError::TooDeep);
             }
@@ -142,7 +175,7 @@ impl EntryPath {
 fn check_character(character: char) -> Result<(), EntryPathError> {
     match character {
         '\\' => Err(EntryPathError::Backslash),
-        ':' | '<' | '>' | '"' | '|' | '?' | '*' => Err(EntryPathError::ReservedCharacter),
+        ':' => Err(EntryPathError::Colon),
         '\u{200e}'
         | '\u{200f}'
         | '\u{061c}'
@@ -153,47 +186,35 @@ fn check_character(character: char) -> Result<(), EntryPathError> {
     }
 }
 
-fn check_component(component: &str) -> Result<(), EntryPathError> {
-    match component {
-        "" | "." => return Err(EntryPathError::NotNormalised),
-        ".." => return Err(EntryPathError::Traversal),
-        _ => {}
-    }
-    if component.len() > MAX_COMPONENT_BYTES {
-        return Err(EntryPathError::ComponentTooLong);
-    }
-    if component.ends_with('.') || component.ends_with(' ') {
-        return Err(EntryPathError::TrailingDotOrSpace);
-    }
-    if is_reserved_device_name(component) {
-        return Err(EntryPathError::ReservedName);
-    }
-    Ok(())
-}
+/// Code page 437, bytes 0x80 to 0xFF. Bytes below 0x80 are ASCII; in names,
+/// 0x00 to 0x1F stay control characters and are rejected.
+const CP437_HIGH: [char; 128] = [
+    '\u{00c7}', '\u{00fc}', '\u{00e9}', '\u{00e2}', '\u{00e4}', '\u{00e0}', '\u{00e5}', '\u{00e7}',
+    '\u{00ea}', '\u{00eb}', '\u{00e8}', '\u{00ef}', '\u{00ee}', '\u{00ec}', '\u{00c4}', '\u{00c5}',
+    '\u{00c9}', '\u{00e6}', '\u{00c6}', '\u{00f4}', '\u{00f6}', '\u{00f2}', '\u{00fb}', '\u{00f9}',
+    '\u{00ff}', '\u{00d6}', '\u{00dc}', '\u{00a2}', '\u{00a3}', '\u{00a5}', '\u{20a7}', '\u{0192}',
+    '\u{00e1}', '\u{00ed}', '\u{00f3}', '\u{00fa}', '\u{00f1}', '\u{00d1}', '\u{00aa}', '\u{00ba}',
+    '\u{00bf}', '\u{2310}', '\u{00ac}', '\u{00bd}', '\u{00bc}', '\u{00a1}', '\u{00ab}', '\u{00bb}',
+    '\u{2591}', '\u{2592}', '\u{2593}', '\u{2502}', '\u{2524}', '\u{2561}', '\u{2562}', '\u{2556}',
+    '\u{2555}', '\u{2563}', '\u{2551}', '\u{2557}', '\u{255d}', '\u{255c}', '\u{255b}', '\u{2510}',
+    '\u{2514}', '\u{2534}', '\u{252c}', '\u{251c}', '\u{2500}', '\u{253c}', '\u{255e}', '\u{255f}',
+    '\u{255a}', '\u{2554}', '\u{2569}', '\u{2566}', '\u{2560}', '\u{2550}', '\u{256c}', '\u{2567}',
+    '\u{2568}', '\u{2564}', '\u{2565}', '\u{2559}', '\u{2558}', '\u{2552}', '\u{2553}', '\u{256b}',
+    '\u{256a}', '\u{2518}', '\u{250c}', '\u{2588}', '\u{2584}', '\u{258c}', '\u{2590}', '\u{2580}',
+    '\u{03b1}', '\u{00df}', '\u{0393}', '\u{03c0}', '\u{03a3}', '\u{03c3}', '\u{00b5}', '\u{03c4}',
+    '\u{03a6}', '\u{0398}', '\u{03a9}', '\u{03b4}', '\u{221e}', '\u{03c6}', '\u{03b5}', '\u{2229}',
+    '\u{2261}', '\u{00b1}', '\u{2265}', '\u{2264}', '\u{2320}', '\u{2321}', '\u{00f7}', '\u{2248}',
+    '\u{00b0}', '\u{2219}', '\u{00b7}', '\u{221a}', '\u{207f}', '\u{00b2}', '\u{25a0}', '\u{00a0}',
+];
 
-/// Windows device names, reserved with or without an extension and in any
-/// case, including the superscript-digit forms Windows also treats as devices.
-fn is_reserved_device_name(component: &str) -> bool {
-    let stem = component
-        .split('.')
-        .next()
-        .unwrap_or(component)
-        .trim_end_matches(' ')
-        .to_ascii_uppercase();
-    if matches!(
-        stem.as_str(),
-        "CON" | "PRN" | "AUX" | "NUL" | "CONIN$" | "CONOUT$"
-    ) {
-        return true;
+fn decode_cp437(byte: u8) -> char {
+    match byte.checked_sub(0x80) {
+        None => char::from(byte),
+        Some(index) => CP437_HIGH
+            .get(usize::from(index))
+            .copied()
+            .unwrap_or(char::REPLACEMENT_CHARACTER),
     }
-    let mut characters = stem.chars();
-    let prefix: String = characters.by_ref().take(3).collect();
-    let rest: String = characters.collect();
-    (prefix == "COM" || prefix == "LPT")
-        && matches!(
-            rest.as_str(),
-            "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "\u{b9}" | "\u{b2}" | "\u{b3}"
-        )
 }
 
 #[cfg(test)]
@@ -216,11 +237,24 @@ mod tests {
         let directory = parse("docs/images/").expect("valid directory");
         assert!(directory.is_directory());
         assert_eq!(directory.components(), ["docs", "images"]);
-        assert!(parse(".hidden").is_ok());
-        assert!(parse("archive..tar").is_ok());
-        assert!(parse("résumé/日本語.txt").is_ok());
-        assert!(parse("console.txt").is_ok());
-        assert!(parse("COM10").is_ok());
+        for raw in [".hidden", "archive..tar", "résumé/日本語.txt", "...", ".x."] {
+            assert!(parse(raw).is_ok(), "{raw:?}");
+        }
+    }
+
+    #[test]
+    fn names_only_windows_reserves_are_accepted() {
+        for raw in [
+            "CON",
+            "docs/nul.txt",
+            "lpt9.log",
+            "what?.txt",
+            "a<b>|\"*",
+            "trailing.",
+            "trailing ",
+        ] {
+            assert!(parse(raw).is_ok(), "{raw:?}");
+        }
     }
 
     #[test]
@@ -231,13 +265,13 @@ mod tests {
             ("..", EntryPathError::Traversal),
             ("/etc/passwd", EntryPathError::Absolute),
             ("//server/share", EntryPathError::Absolute),
-            ("C:/Windows/x", EntryPathError::ReservedCharacter),
+            ("/", EntryPathError::Absolute),
+            ("C:/Windows/x", EntryPathError::Colon),
             ("..\\..\\x", EntryPathError::Backslash),
             ("\\\\server\\share", EntryPathError::Backslash),
             ("a/./b", EntryPathError::NotNormalised),
             ("a//b", EntryPathError::NotNormalised),
             ("./a", EntryPathError::NotNormalised),
-            ("/", EntryPathError::Absolute),
         ];
         for (raw, expected) in cases {
             assert_eq!(parse(raw), Err(expected), "{raw:?}");
@@ -245,21 +279,13 @@ mod tests {
     }
 
     #[test]
-    fn non_portable_names_are_rejected() {
+    fn disguising_names_are_rejected() {
         let cases = [
             ("file\0.pdf", EntryPathError::ControlCharacter),
             ("line\nbreak", EntryPathError::ControlCharacter),
             ("invoice\u{202e}fdp.exe", EntryPathError::BidiControl),
             ("a\u{2067}b", EntryPathError::BidiControl),
-            ("report.pdf:stream", EntryPathError::ReservedCharacter),
-            ("what?.txt", EntryPathError::ReservedCharacter),
-            ("CON", EntryPathError::ReservedName),
-            ("docs/nul.txt", EntryPathError::ReservedName),
-            ("lpt9.log", EntryPathError::ReservedName),
-            ("COM\u{b9}", EntryPathError::ReservedName),
-            ("con .txt", EntryPathError::ReservedName),
-            ("trailing.", EntryPathError::TrailingDotOrSpace),
-            ("trailing ", EntryPathError::TrailingDotOrSpace),
+            ("report.pdf:stream", EntryPathError::Colon),
         ];
         for (raw, expected) in cases {
             assert_eq!(parse(raw), Err(expected), "{raw:?}");
@@ -286,5 +312,45 @@ mod tests {
             EntryPath::parse(&[0xff, 0xfe]),
             Err(EntryPathError::NotUtf8)
         );
+    }
+
+    #[test]
+    fn legacy_names_are_decoded_then_validated() {
+        // "Résumé/Ünïcode.txt" as an old ZIP tool would store it.
+        let raw = b"R\x82sum\x82/\x9an\x8bcode.txt";
+        let path = EntryPath::parse_cp437(raw).expect("decoded");
+        assert_eq!(path.components(), ["Résumé", "Ünïcode.txt"]);
+        assert_eq!(
+            EntryPath::parse_cp437(&[0xe1, 0xff]).map(|p| p.components()[0].clone()),
+            Ok("ß\u{a0}".to_owned())
+        );
+        assert_eq!(
+            EntryPath::parse_cp437(b"../x"),
+            Err(EntryPathError::Traversal)
+        );
+        assert_eq!(
+            EntryPath::parse_cp437(b"a\\b"),
+            Err(EntryPathError::Backslash)
+        );
+        assert_eq!(
+            EntryPath::parse_cp437(b"a\x01b"),
+            Err(EntryPathError::ControlCharacter)
+        );
+        // Decoding can grow a name past the limit even if the raw bytes fit.
+        assert_eq!(
+            EntryPath::parse_cp437(&[0xb0; MAX_PATH_BYTES]),
+            Err(EntryPathError::TooLong)
+        );
+        // ASCII names decode to themselves.
+        assert_eq!(EntryPath::parse_cp437(b"docs/a.pdf"), parse("docs/a.pdf"));
+    }
+
+    #[test]
+    fn cp437_table_matches_known_points() {
+        assert_eq!(decode_cp437(0x41), 'A');
+        assert_eq!(decode_cp437(0x80), 'Ç');
+        assert_eq!(decode_cp437(0x9e), '₧');
+        assert_eq!(decode_cp437(0xe1), 'ß');
+        assert_eq!(decode_cp437(0xff), '\u{a0}');
     }
 }
