@@ -19,7 +19,10 @@ pub struct StagedInput<'a> {
 }
 
 impl<'a> StagedInput<'a> {
-    pub(crate) fn new(header: &'a [u8], len: u64) -> Self {
+    /// Describes an input for a validator. The runner passes at most
+    /// [`HEADER_LEN`] bytes; this constructor is public so validators can be
+    /// tested and fuzzed directly.
+    pub fn new(header: &'a [u8], len: u64) -> Self {
         Self { header, len }
     }
 
