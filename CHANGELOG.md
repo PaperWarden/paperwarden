@@ -71,3 +71,7 @@ All notable changes will be documented here after the first release baseline.
   The app has a `DocumentNotices` and a `DocumentRefusal` widget that put them
   into plain words. Each is read by screen readers as one announced block, and
   a new amber warning color meets WCAG AA in both themes.
+- Added the iOS privacy manifest (`PrivacyInfo.xcprivacy`): no tracking, no
+  collected data, and the file-timestamp reason PDFium and the core need. CI
+  checks that the built app carries it and that it declares every
+  required-reason API the app's binaries import.

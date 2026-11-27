@@ -19,6 +19,9 @@ fetched and verified by `scripts/fetch_pdfium.py`.
 - `ios-simulator-arm64.jsonl`: `pdf_probe` over every corpus PDF on the
   simulator, one process per file, with peak memory from `getrusage`.
 - `simulator.txt`: the booted simulator and the host macOS version.
+- `ios-imports.txt`: the symbols the device framework imports (`llvm-nm -u`
+  on the verified asset). `scripts/check_privacy_manifest.py`'s tests check the
+  app's privacy manifest against it.
 
 The job uploads the same files plus the rendered first pages as the
 `PW-011-ios-evidence` artifact (kept 14 days). Simulator timings and memory
