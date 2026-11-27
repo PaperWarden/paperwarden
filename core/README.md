@@ -13,7 +13,7 @@ shared lint policy with `[lints] workspace = true`.
 
 `core/crates/store` (`paperwarden-store`) is the local database: settings, job
 history, workflows and the optional contentless FTS5 index, on SQLite compiled
-from source (ADR-0006, Proposed).
+from source (ADR-0006).
 
 `core/crates/bridge` (`paperwarden_bridge`) is the Flutter-Rust bridge
 (ADR-0005). Its hand-written API lives in `src/api`; `src/frb_generated.rs`
