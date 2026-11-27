@@ -595,6 +595,7 @@ name = "paperwarden-pdf-scan"
 version = "0.0.1"
 dependencies = [
  "miniz_oxide",
+ "paperwarden-core",
 ]
 
 [[package]]
@@ -610,6 +611,7 @@ version = "0.0.1"
 dependencies = [
  "flutter_rust_bridge",
  "paperwarden-core",
+ "paperwarden-pdf-scan",
 ]
 
 [[package]]
