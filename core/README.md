@@ -26,16 +26,40 @@ must equal its library name, or Cargokit silently ships no library. The fuzz har
 | `cancel` | Cooperative cancellation tokens shared by the UI and workers | Clean up; the job owner does |
 | `job` | Job identifiers and the lifecycle state machine | Perform I/O |
 | `workspace` | Creating, cleaning and recovering on-disk job workspaces | Know about formats or engines |
+| `limits` | Per-job input, output and time bounds | Enforce them; the runner and engine context do |
+| `validation` | Content-based input checks (`InputValidator`, `MagicBytes`) | See file names or original paths |
+| `engine` | The `Processor` and `OutputVerifier` seam, bounded output writer, checkpoints | Create workspaces or export |
+| `runner` | Driving one job: stage, validate, process, verify, export, clean | Contain format logic |
+| `export` (private) | Copying a verified output to a new file | Overwrite anything |
+
+How a job runs (`JobRunner::run`):
+
+1. The input is copied into the job's fresh workspace (`input/input`), within
+   the input limit. The original is only ever opened for reading, and nothing
+   from its name is used.
+2. The validator sees the staged copy's first 4 KiB and length.
+3. The processor reads the staged copy and writes one output through a writer
+   that fails at the output limit. It calls `checkpoint()` between steps.
+   Cancellation and the time limit are also checked between every stage, and
+   a processor panic fails the job instead of unwinding into the app.
+4. The output must be a regular file within the limit, then the verifier
+   checks it.
+5. `ReadyJob::export_to` creates a new file; it fails if anything exists at
+   the destination, including the original. `finish` or dropping the job
+   removes the workspace. Every stopped job is cleaned before `run` returns,
+   and its `JobReport` records any cleanup failure.
+
+Bounds are cooperative: an engine that never reaches a checkpoint cannot be
+preempted. Whether an engine needs process isolation is decided in its own
+feasibility work. Call `JobRunner::recover` once at startup, before any job, to
+remove workspaces a crash left behind; it never follows links.
 
 Planned boundaries are created by their own issue, not ahead of time:
 
 | Planned module | Purpose | Invariants |
 | --- | --- | --- |
-| `validation` | Type and structure checks from magic bytes, never filenames | 10 |
-| `limits` | Size, decompression, nesting, dimension, time and memory bounds | 11 |
+| `limits` additions | Decompression, nesting, dimension and memory bounds | 11 |
 | `archive` | Safe extraction: traversal, absolute paths, links, bombs | 11 |
-| `engine` | Trait seam for processors; engines stay provisional until proven | 6, 12 |
-| `export` | Explicit save to a new destination after verification | 8 |
 | `security`, `privacy`, `pdf` | Reserved; `CODEOWNERS` requires core-team review | — |
 
 Rules between modules:
