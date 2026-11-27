@@ -72,6 +72,10 @@ pub enum EngineError {
     /// The engine could not process this input. The reason is shown to the
     /// user and must not contain document content.
     Failed(&'static str),
+    /// The input exceeds one of the engine's resource bounds (decompressed
+    /// size, nesting, image size and the like). The reason is shown to the
+    /// user and must not contain document content.
+    LimitExceeded(&'static str),
 }
 
 impl From<Interruption> for EngineError {
