@@ -1,5 +1,7 @@
 # PW-011 evidence
 
+See `../../PW-011-pdfium-ios.md` for the write-up.
+
 Produced on 2026-11-26 by the `pdfium-ios` job in `.github/workflows/ios.yml`
 (run 45895604215, commit 8f23158), on GitHub's `macos-latest` runner (macOS
 26.7.2) with an iPhone 17 Pro simulator. PDFium `chromium/8125`: assets
