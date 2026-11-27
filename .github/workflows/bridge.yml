@@ -1,0 +1,45 @@
+name: Bridge
+
+# CONTRIBUTING.md, "Generated code": committed FFI bindings must equal a fresh
+# generation from core/crates/bridge/src/api.
+
+on:
+  pull_request:
+    paths:
+      - "core/**"
+      - "apps/mobile/**"
+      - ".github/workflows/bridge.yml"
+  push:
+    branches: [main]
+    paths:
+      - "core/**"
+      - "apps/mobile/**"
+      - ".github/workflows/bridge.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  bindings:
+    runs-on: ubuntu-latest
+    defaults:
+      run: {working-directory: apps/mobile}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable action
+        with: {toolchain: "1.98.0"}
+      - name: Install verified Flutter SDK
+        run: .github/scripts/setup_flutter.sh
+        working-directory: ${{ github.workspace }}
+      # Built from crates.io sources with its lockfile, not a prebuilt binary.
+      # Keep the version equal to flutter_rust_bridge in pubspec.yaml and
+      # core/crates/bridge/Cargo.toml.
+      - run: cargo install flutter_rust_bridge_codegen --version 2.13.0 --locked
+      - run: flutter pub get
+      - run: flutter_rust_bridge_codegen generate
+      - name: Committed bindings match a fresh generation
+        run: |
+          if ! git diff --exit-code -- . ../../core; then
+            echo 'Generated bindings are stale. Run flutter_rust_bridge_codegen generate in apps/mobile and commit the result.' >&2
+            exit 1
+          fi

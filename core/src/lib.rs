@@ -7,6 +7,7 @@
 //!
 //! # Module boundaries
 //!
+//! - [`cancel`]: cooperative cancellation shared between the UI and workers.
 //! - [`job`]: job identifiers and the lifecycle state machine. Pure logic, no
 //!   I/O.
 //! - [`workspace`]: the only module that creates, cleans or recovers on-disk
@@ -16,8 +17,10 @@
 //! The crate performs no network I/O and never spawns processes; the lint
 //! policy in `core/clippy.toml` enforces both.
 
+pub mod cancel;
 pub mod job;
 pub mod workspace;
 
+pub use cancel::{CancellationToken, Cancelled};
 pub use job::{Job, JobId, JobState};
 pub use workspace::Workspace;

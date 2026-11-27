@@ -19,3 +19,8 @@ All notable changes will be documented here after the first release baseline.
   immediately, the app version, and the privacy policy bundled for offline
   reading. Security, export and storage settings are marked "Coming soon".
 - Adopted Riverpod (`flutter_riverpod` 3.5.0, MIT) for app state.
+- Prototyped the Flutter-Rust bridge (flutter_rust_bridge 2.13.0 with
+  Cargokit): sync and async calls, cancellation and typed errors, proven on an
+  Android emulator. CI now checks generated bindings, the Android APK's Rust
+  libraries and the iOS link. The license check now covers every locked
+  version of a package.

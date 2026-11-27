@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "apps/mobile/**"
+      - "core/**"
       - ".github/workflows/android.yml"
   push:
     branches: [main]
     paths:
       - "apps/mobile/**"
+      - "core/**"
       - ".github/workflows/android.yml"
 
 permissions:
@@ -25,6 +27,11 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+      # Cargokit builds the Rust bridge for every Android ABI the APK ships.
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable action
+        with:
+          toolchain: "1.98.0"
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
       - name: Install verified Flutter SDK
         run: .github/scripts/setup_flutter.sh
         working-directory: ${{ github.workspace }}
@@ -36,5 +43,16 @@ jobs:
             exit 1
           fi
       - run: flutter build apk --debug
+      # Cargokit skips a missing library without failing the build, so check
+      # the APK really carries the Rust core for each ABI.
+      - name: APK contains the Rust bridge
+        run: |
+          apk=build/app/outputs/flutter-apk/app-debug.apk
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            if ! unzip -l "$apk" | grep -q "lib/$abi/libpaperwarden_bridge.so"; then
+              echo "libpaperwarden_bridge.so missing for $abi" >&2
+              exit 1
+            fi
+          done
       - name: Android lint
         run: ./android/gradlew -p android lintDebug

@@ -1,0 +1,71 @@
+// Runs on a device or emulator against the real Rust library:
+//   flutter test integration_test -d <device>
+// Proves the bridge feasibility criteria from #12: sync and async calls,
+// cancellation and typed errors.
+
+import 'dart:async';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'package:paperwarden/src/rust/api/probe.dart';
+import 'package:paperwarden/src/rust/frb_generated.dart';
+
+Matcher _bridgeError(BridgeErrorKind kind) =>
+    isA<BridgeError>().having((error) => error.kind, 'kind', kind);
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  setUpAll(RustLib.init);
+
+  test('a synchronous call returns the core version', () {
+    expect(coreVersion(), '0.0.1');
+  });
+
+  test('an asynchronous call completes without blocking Dart', () async {
+    var ticks = 0;
+    final timer = Timer.periodic(
+      const Duration(milliseconds: 10),
+      (_) => ticks++,
+    );
+    addTearDown(timer.cancel);
+
+    final steps = await runProbeJob(
+      steps: 20,
+      stepMillis: 20,
+      cancel: CancelHandle(),
+    );
+
+    expect(steps, 20);
+    // The Rust work took ~400 ms on a worker thread; Dart kept running.
+    expect(ticks, greaterThan(10));
+  });
+
+  test('cancelling stops a running call with a typed error', () async {
+    final handle = CancelHandle();
+    final stopwatch = Stopwatch()..start();
+    final job = runProbeJob(steps: 1000, stepMillis: 10, cancel: handle);
+
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    handle.cancel();
+
+    await expectLater(job, throwsA(_bridgeError(BridgeErrorKind.cancelled)));
+    expect(handle.isCancelled(), isTrue);
+    // Uncancelled, the job would take 10 s.
+    expect(stopwatch.elapsed, lessThan(const Duration(seconds: 2)));
+  });
+
+  test('invalid arguments are rejected with a typed error', () async {
+    await expectLater(
+      runProbeJob(steps: 0, stepMillis: 0, cancel: CancelHandle()),
+      throwsA(_bridgeError(BridgeErrorKind.invalidInput)),
+    );
+  });
+
+  test('core validation errors reach Dart', () {
+    expect(validateJobId(id: 'job-1'), 'job-1');
+    expect(
+      () => validateJobId(id: '../escape'),
+      throwsA(_bridgeError(BridgeErrorKind.invalidInput)),
+    );
+  });
+}

@@ -22,5 +22,8 @@ preferred over broad rewrites.
 ## Generated code
 
 Generated FFI bindings must be reproducible. A pull request changing an interface
-must update and verify the generated artifacts in the same change.
+must update and verify the generated artifacts in the same change: after
+editing `core/crates/bridge/src/api`, run `flutter_rust_bridge_codegen generate`
+(2.13.0) in `apps/mobile` and commit the result. The `Bridge` workflow fails if
+the committed bindings differ from a fresh generation.
 

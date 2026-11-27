@@ -3,6 +3,9 @@ analyzer:
     - build/**
     - android/**
     - ios/**
+    # Vendored Cargokit (flutter_rust_bridge, MIT). Its build tool resolves
+    # its own packages at build time and is not edited here.
+    - rust_builder/**
 include: package:flutter_lints/flutter.yaml
 
 linter:

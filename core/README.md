@@ -9,13 +9,21 @@ ADR-0002). Flutter owns the UI; Kotlin and Swift stay thin platform adapters.
 `core/` is both the Cargo workspace root and its first member,
 `paperwarden-core`. Future crates, such as the FFI bridge, go under
 `core/crates/<name>`, are added to `members` in `Cargo.toml`, and opt into the
-shared lint policy with `[lints] workspace = true`. The fuzz harnesses in
+shared lint policy with `[lints] workspace = true`.
+
+`core/crates/bridge` (`paperwarden_bridge`) is the Flutter-Rust bridge
+(ADR-0005). Its hand-written API lives in `src/api`; `src/frb_generated.rs`
+is generated. It defines its own lint table because generated FFI glue needs
+`unsafe`: hand-written code keeps the core's clippy policy with `unsafe_code`
+at `deny`, and only the generated module allows exceptions. Its package name
+must equal its library name, or Cargokit silently ships no library. The fuzz harnesses in
 `/fuzz` stay outside the workspace, as `cargo-fuzz` expects.
 
 ## Module boundaries
 
 | Module | Owns | Must not |
 | --- | --- | --- |
+| `cancel` | Cooperative cancellation tokens shared by the UI and workers | Clean up; the job owner does |
 | `job` | Job identifiers and the lifecycle state machine | Perform I/O |
 | `workspace` | Creating, cleaning and recovering on-disk job workspaces | Know about formats or engines |
 
