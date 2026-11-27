@@ -645,17 +645,203 @@ def all_fixtures() -> list[Fixture]:
             + text_fixtures() + conversion_fixtures() + ocr_fixtures())
 
 
+# The three hand-made fixtures that predate the generator. Their bytes are read
+# from disk and their purpose, provenance and expected text kept as reviewed.
+ORIGINALS = ("valid/minimal.txt", "malformed/truncated.pdf", "security/active-content-markers.txt")
+
+EXTENSIONS = {
+    ".pdf": ("pdf", "application/pdf", b"%PDF-"),
+    ".docx": ("office", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", b"PK\x03\x04"),
+    ".docm": ("office", "application/vnd.ms-word.document.macroEnabled.12", b"PK\x03\x04"),
+    ".xlsx": ("office", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", b"PK\x03\x04"),
+    ".odt": ("office", "application/vnd.oasis.opendocument.text", b"PK\x03\x04"),
+    ".zip": ("archive", "application/zip", b"PK\x03\x04"),
+    ".png": ("image", "image/png", b"\x89PNG\r\n\x1a\n"),
+    ".bmp": ("image", "image/bmp", b"BM"),
+    ".jpg": ("image", "image/jpeg", b"\xff\xd8\xff"),
+    ".webp": ("image", "image/webp", b"RIFF"),
+    ".tiff": ("image", "image/tiff", b"II*\x00"),
+    ".txt": ("text", "text/plain", None),
+    ".md": ("text", "text/markdown", None),
+    ".csv": ("text", "text/csv", None),
+    ".rtf": ("text", "application/rtf", b"{\\rtf1"),
+    ".html": ("html", "text/html", None),
+    ".svg": ("svg", "image/svg+xml", None),
+}
+
+RTL_NAME = "invoice" + chr(0x202E) + "fdp.exe"
+OCR_TRUTH = "ocr/printed-line.txt"
+
+# What each fixture claims, checked independently by scripts/corpus_facts.py.
+# Security fixtures also state their outcome; other categories default to
+# accept (valid, conversion inputs, OCR images), reject (malformed) or
+# reference (ground-truth files).
+DECLARED: dict[str, dict] = {
+    # Originals
+    "valid/minimal.txt": {"facts": {"utf8": True}},
+    "malformed/truncated.pdf": {"facts": {"pdf_xref_valid": False}},
+    "security/active-content-markers.txt": {
+        "outcome": "neutralize",
+        "facts": {"contains": ["/JavaScript", "vbaProject.bin", ".invalid"]}},
+    # PDF
+    "valid/pdf/one-page.pdf": {"facts": {"pdf_xref_valid": True, "pdf_text": [SAMPLE_TEXT]}},
+    "valid/pdf/two-pages-flate.pdf": {"facts": {"pdf_xref_valid": True, "pdf_text": ["Page one", "Page two"]}},
+    "valid/pdf/incremental-update.pdf": {"facts": {
+        "pdf_xref_valid": True, "contains": ["/Prev"],
+        "pdf_text": [SAMPLE_TEXT, "PaperWarden corpus, revised"]}},
+    "malformed/pdf/bad-xref-offsets.pdf": {"facts": {"pdf_xref_valid": False}},
+    "malformed/pdf/no-eof-marker.pdf": {"facts": {"absent": ["%%EOF"], "contains": ["startxref"]}},
+    "malformed/pdf/header-only.pdf": {"facts": {"pdf_xref_valid": False, "absent": ["obj"]}},
+    "security/pdf/javascript-openaction.pdf": {"outcome": "neutralize", "facts": {
+        "pdf_xref_valid": True, "contains": ["/OpenAction", "/S /JavaScript"]}},
+    "security/pdf/launch-and-uri-actions.pdf": {"outcome": "neutralize", "facts": {
+        "pdf_xref_valid": True, "contains": ["/S /Launch", "/S /URI", REMOTE]}},
+    "security/pdf/xref-prev-loop.pdf": {"outcome": "bound", "facts": {"pdf_prev_loop": True}},
+    "security/pdf/deep-nesting.pdf": {"outcome": "bound", "facts": {"max_bracket_depth": 20000}},
+    "security/pdf/flate-bomb.pdf": {"outcome": "bound", "facts": {"max_inflated_bytes": 16 * MIB}},
+    "security/pdf/stream-length-overflow.pdf": {"outcome": "reject", "facts": {"contains": ["/Length 999999999"]}},
+    # Office
+    "valid/office/minimal.docx": {"facts": {"zip_valid": True, "xml_wellformed": True, "zip_entries": [
+        "[Content_Types].xml", "_rels/.rels", "word/document.xml"]}},
+    "valid/office/minimal.xlsx": {"facts": {"zip_valid": True, "xml_wellformed": True, "zip_entries": [
+        "[Content_Types].xml", "_rels/.rels", "xl/workbook.xml", "xl/_rels/workbook.xml.rels",
+        "xl/worksheets/sheet1.xml"]}},
+    "valid/office/minimal.odt": {"facts": {
+        "zip_valid": True, "xml_wellformed": True, "zip_first_stored": "mimetype"}},
+    "malformed/office/truncated.docx": {"facts": {"zip_valid": False}},
+    "malformed/office/no-content-types.docx": {"facts": {
+        "zip_valid": True, "zip_entries": ["_rels/.rels", "word/document.xml"]}},
+    "security/office/macro-part.docm": {"outcome": "neutralize", "facts": {
+        "zip_valid": True,
+        "zip_text_contains": {"[Content_Types].xml": "macroEnabled", "word/vbaProject.bin": "NOT A VBA PROJECT"}}},
+    "security/office/remote-template.docx": {"outcome": "neutralize", "facts": {
+        "zip_valid": True,
+        "zip_text_contains": {"word/_rels/settings.xml.rels": 'TargetMode="External"'}}},
+    "security/office/xml-external-entity.docx": {"outcome": "neutralize", "facts": {
+        "xml_doctype": True,
+        "zip_text_contains": {"word/document.xml": 'SYSTEM "file:///etc/passwd"'}}},
+    "security/office/xml-entity-expansion.xlsx": {"outcome": "bound", "facts": {
+        "xml_doctype": True, "zip_text_contains": {"xl/worksheets/sheet1.xml": "&lol8;"}}},
+    # Archives
+    "valid/archive/two-files.zip": {"facts": {"zip_valid": True, "zip_entries": ["readme.txt", "docs/note.txt"]}},
+    "valid/archive/utf8-names.zip": {"facts": {
+        "zip_valid": True, "zip_entries": ["résumé/日本語.txt", "CON.txt"], "zip_utf8_flags": [True, False]}},
+    "valid/archive/legacy-cp437-name.zip": {"facts": {
+        "zip_valid": True, "zip_entries": ["Résumé.txt"], "zip_utf8_flags": [False]}},
+    "malformed/archive/truncated.zip": {"facts": {"zip_valid": False}},
+    "malformed/archive/bad-central-directory.zip": {"facts": {"zip_valid": False}},
+    "security/archive/path-traversal.zip": {"outcome": "reject", "facts": {
+        "zip_entries": ["../../paperwarden-escape.txt"]}},
+    "security/archive/absolute-path.zip": {"outcome": "reject", "facts": {
+        "zip_entries": ["/tmp/paperwarden-escape.txt"]}},
+    "security/archive/backslash-traversal.zip": {"outcome": "reject", "facts": {
+        "zip_entries": ["..\\..\\paperwarden-escape.txt"]}},
+    "security/archive/symlink-entry.zip": {"outcome": "reject", "facts": {
+        "zip_entries": ["link-to-passwd"], "zip_symlinks": 1}},
+    "security/archive/zip-bomb.zip": {"outcome": "bound", "facts": {
+        "zip_uncompressed_bytes": 16 * MIB, "zip_ratio_at_least": 1000}},
+    "security/archive/nested-depth-6.zip": {"outcome": "bound", "facts": {"zip_nesting_depth": 6}},
+    "security/archive/duplicate-names.zip": {"outcome": "neutralize", "facts": {
+        "zip_entries": ["same.txt", "same.txt"]}},
+    "security/archive/case-collision.zip": {"outcome": "neutralize", "facts": {
+        "zip_entries": ["Report.txt", "report.txt"]}},
+    "security/archive/bidi-filename.zip": {"outcome": "reject", "facts": {"zip_entries": [RTL_NAME]}},
+    # Images
+    "valid/image/2x2.png": {"facts": {"image_size": [2, 2], "png_crc_valid": True, "png_complete": True}},
+    "valid/image/2x2.bmp": {"facts": {"image_size": [2, 2]}},
+    "valid/image/8x8.jpg": {"facts": {"image_size": [8, 8]}},
+    "valid/image/8x8.webp": {"facts": {"image_size": [8, 8]}},
+    "valid/image/8x8.tiff": {"facts": {"image_size": [8, 8]}},
+    "malformed/image/bad-crc.png": {"facts": {"png_crc_valid": False}},
+    "malformed/image/truncated.png": {"facts": {"png_complete": False}},
+    "security/image/huge-dimensions.png": {"outcome": "bound", "facts": {
+        "image_size": [100_000, 100_000], "png_crc_valid": True}},
+    # Text and markup
+    "valid/text/utf8-multilingual.txt": {"facts": {"utf8": True, "contains": ["日本語", "العربية"]}},
+    "valid/text/utf16le-bom.txt": {"facts": {"text": "PaperWarden UTF-16\n"}},
+    "valid/text/sample.md": {"facts": {"utf8": True, "contains": ["# PaperWarden", REMOTE]}},
+    "valid/text/sample.csv": {"facts": {"csv_shape": [3, 3]}},
+    "valid/text/sample.rtf": {"facts": {"contains": [SAMPLE_TEXT]}},
+    "malformed/text/invalid-utf8.txt": {"facts": {"utf8": False}},
+    "security/html/remote-resources.html": {"outcome": "neutralize", "facts": {
+        "contains": ["<script", "<iframe", "<link", REMOTE]}},
+    "security/svg/script-and-external-refs.svg": {"outcome": "neutralize", "facts": {
+        "contains": ["<script", "onload=", "xlink:href", REMOTE]}},
+    # Conversion
+    "conversion/docx-to-pdf/input.docx": {"references": ["conversion/docx-to-pdf/expected-text.txt"],
+                                          "facts": {"zip_valid": True, "xml_wellformed": True}},
+    "conversion/docx-to-pdf/expected-text.txt": {"facts": {"text": "PaperWarden conversion sample\n"}},
+    "conversion/csv-to-xlsx/input.csv": {"references": ["conversion/csv-to-xlsx/expected-cells.csv"],
+                                         "facts": {"csv_shape": [3, 2]}},
+    "conversion/csv-to-xlsx/expected-cells.csv": {"facts": {"csv_shape": [3, 2]}},
+    "conversion/png-to-pdf/input.png": {"facts": {"image_size": [2, 2], "png_complete": True}},
+    # OCR
+    "ocr/printed-line.png": {"references": [OCR_TRUTH], "facts": {"image_size": [1000, 120]}},
+    "ocr/printed-line-rotated-90.png": {"references": [OCR_TRUTH], "facts": {"image_size": [120, 1000]}},
+    OCR_TRUTH: {"facts": {"text": "PAPERWARDEN OCR SAMPLE 2026\n"}},
+}
+
+
+def manifest_entry(path: str, data: bytes, provenance: str, purpose: str, expected: str) -> dict:
+    declared = DECLARED.get(path)
+    if declared is None or not declared.get("facts"):
+        raise SystemExit(f"{path}: declare its facts in DECLARED")
+    category = path.split("/", 1)[0]
+    suffix = pathlib.PurePosixPath(path).suffix
+    file_format, media_type, magic = EXTENSIONS[suffix]
+    is_reference = category in ("conversion", "ocr") and suffix in (".txt", ".csv") and (
+        path.split("/")[-1].startswith("expected-") or path == OCR_TRUTH)
+    if is_reference:
+        outcome = "reference"
+    elif category == "security":
+        outcome = declared.get("outcome") or sys.exit(f"{path}: security fixtures declare an outcome")
+    else:
+        outcome = {"malformed": "reject"}.get(category, "accept")
+    if outcome == "reference":
+        requires: list[str] = []
+    elif category == "ocr":
+        requires = ["ocr"]
+    elif category == "conversion":
+        requires = ["conversion", file_format]
+    else:
+        requires = [file_format]
+    facts = dict(declared["facts"])
+    if magic is not None:
+        facts = {"signature": magic.hex(), **facts}
+    entry = {
+        "path": path,
+        "sha256": hashlib.sha256(data).hexdigest(),
+        "bytes": len(data),
+        "license": LICENSE,
+        "provenance": provenance,
+        "category": category,
+        "format": file_format,
+        "media_type": media_type,
+        "outcome": outcome,
+        "requires": requires,
+        "purpose": purpose,
+        "expected": expected,
+        "facts": facts,
+    }
+    if declared.get("references"):
+        entry["references"] = declared["references"]
+    return entry
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--check", action="store_true", help="report changes without writing")
     arguments = parser.parse_args(argv)
 
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    previous = {entry["path"]: entry for entry in manifest["fixtures"]}
     fixtures = all_fixtures()
     generated = {fixture.path for fixture in fixtures}
-    if len(generated) != len(fixtures):
+    if len(generated) != len(fixtures) or generated & set(ORIGINALS):
         raise SystemExit("duplicate fixture path in generator")
-    kept = [entry for entry in manifest["fixtures"] if entry["path"] not in generated]
+    unknown = set(DECLARED) - generated - set(ORIGINALS)
+    if unknown:
+        raise SystemExit(f"DECLARED lists fixtures that do not exist: {sorted(unknown)}")
 
     changed = []
     entries = []
@@ -666,14 +852,12 @@ def main(argv: list[str] | None = None) -> int:
             if not arguments.check:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(fixture.data)
-        entries.append({
-            "path": fixture.path,
-            "sha256": hashlib.sha256(fixture.data).hexdigest(),
-            "license": LICENSE,
-            "provenance": fixture.provenance,
-            "purpose": fixture.purpose,
-            "expected": fixture.expected,
-        })
+        entries.append(manifest_entry(
+            fixture.path, fixture.data, fixture.provenance, fixture.purpose, fixture.expected))
+    for path in ORIGINALS:
+        reviewed = previous[path]
+        entries.append(manifest_entry(
+            path, (CORPUS / path).read_bytes(), reviewed["provenance"], reviewed["purpose"], reviewed["expected"]))
 
     if arguments.check:
         for path in changed:
@@ -681,8 +865,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{len(fixtures) - len(changed)} of {len(fixtures)} generated fixtures match.")
         return 1 if changed else 0
 
-    manifest["fixtures"] = sorted(kept + entries, key=lambda entry: entry["path"])
-    MANIFEST.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
+    manifest["schema"] = 2
+    manifest["fixtures"] = sorted(entries, key=lambda entry: entry["path"])
+    # ASCII only, so no bidirectional or other invisible character can appear
+    # unescaped in the manifest.
+    MANIFEST.write_text(json.dumps(manifest, indent=2, ensure_ascii=True) + "\n", encoding="utf-8", newline="\n")
     print(f"Wrote {len(changed)} changed fixtures; manifest lists {len(manifest['fixtures'])}.")
     return 0
 

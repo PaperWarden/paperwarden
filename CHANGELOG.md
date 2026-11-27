@@ -12,3 +12,8 @@ All notable changes will be documented here after the first release baseline.
   `scripts/generate_corpus.py`: valid, malformed and inert security cases for
   PDF, Office, archives, images, text, HTML and SVG, plus conversion pairs and
   OCR images with ground truth.
+- Corpus manifest schema 2: category, format, media type, expected outcome,
+  required engine capability, references and structural facts. CI now verifies
+  every fact against the fixture bytes, self-tests the checker, reports engine
+  outcomes as pending until engines exist, and keeps a per-fixture report for
+  14 days.
