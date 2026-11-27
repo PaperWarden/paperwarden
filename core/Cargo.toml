@@ -1,12 +1,55 @@
+# The core is both the workspace root and its first member. Future crates
+# (for example the FFI bridge) live under `core/crates/<name>` and are listed
+# in `members`. Fuzz harnesses stay outside this workspace in `/fuzz`.
+[workspace]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.98"
+license = "Apache-2.0"
+publish = false
+
+# Lint policy. Members opt in with `[lints] workspace = true`. See README.md
+# for the rationale; test-only relaxations live in clippy.toml.
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[workspace.lints.clippy]
+# Hostile input must never be able to panic the core.
+expect_used = "deny"
+indexing_slicing = "deny"
+panic = "deny"
+unwrap_used = "deny"
+# No unfinished or debugging code in shipped paths.
+dbg_macro = "deny"
+todo = "deny"
+unimplemented = "deny"
+# The core reports through return values, never stdio or process exit.
+exit = "deny"
+print_stderr = "deny"
+print_stdout = "deny"
+# Resource cleanup must run; leaked guards would skip workspace cleanup.
+mem_forget = "deny"
+# Network and subprocess capabilities are banned in clippy.toml.
+disallowed_methods = "deny"
+disallowed_types = "deny"
+
 [package]
 name = "paperwarden-core"
 version = "0.0.1"
-edition = "2021"
-license = "Apache-2.0"
-publish = false
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
 
 [lib]
 name = "paperwarden_core"
 path = "src/lib.rs"
+
+[lints]
+workspace = true
 
 [dependencies]

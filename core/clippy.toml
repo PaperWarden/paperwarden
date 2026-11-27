@@ -1,0 +1,22 @@
+# Tests may panic: a failed assertion or `expect` is the desired failure mode.
+# Production code stays under the deny-level lints in Cargo.toml.
+allow-dbg-in-tests = true
+allow-expect-in-tests = true
+allow-indexing-slicing-in-tests = true
+allow-panic-in-tests = true
+allow-print-in-tests = true
+allow-unwrap-in-tests = true
+
+# PRODUCT_INVARIANTS.md 1, 4 and 7: the core has no network path. Adding one
+# requires an approved ADR, not an edit to this list.
+disallowed-types = [
+  { path = "std::net::TcpListener", reason = "the core performs no network I/O (PRODUCT_INVARIANTS.md 1, 4, 7)" },
+  { path = "std::net::TcpStream", reason = "the core performs no network I/O (PRODUCT_INVARIANTS.md 1, 4, 7)" },
+  { path = "std::net::UdpSocket", reason = "the core performs no network I/O (PRODUCT_INVARIANTS.md 1, 4, 7)" },
+]
+
+# PRODUCT_INVARIANTS.md 6 and ARCHITECTURE.md: engines run in-process behind
+# reviewed adapters; the core never launches external programs.
+disallowed-methods = [
+  { path = "std::process::Command::new", reason = "the core never spawns processes; wrap engines behind reviewed in-process adapters (PRODUCT_INVARIANTS.md 6)" },
+]
