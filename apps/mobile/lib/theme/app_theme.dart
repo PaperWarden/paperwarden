@@ -21,6 +21,13 @@ abstract final class AppTheme {
       onPrimary: p.onBrand,
       secondary: p.accent,
       surface: p.surface,
+      // Sheets, dialogs and menus use these; keep them neutral rather than
+      // tinted by the red seed.
+      surfaceContainerLowest: p.surface,
+      surfaceContainerLow: p.surface,
+      surfaceContainer: p.surface,
+      surfaceContainerHigh: p.surface,
+      surfaceContainerHighest: p.surface,
       onSurface: p.text,
       onSurfaceVariant: p.textSecondary,
       outline: p.outline,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paperwarden/app.dart';
 import 'package:paperwarden/screens/files_screen.dart';
@@ -14,7 +15,7 @@ Finder _destination(String label) => find.descendant(
 
 void main() {
   testWidgets('opens on Home with four destinations', (tester) async {
-    await tester.pumpWidget(const PaperWardenApp());
+    await tester.pumpWidget(const ProviderScope(child: PaperWardenApp()));
 
     expect(find.byType(NavigationDestination), findsNWidgets(4));
     for (final label in ['Home', 'Files', 'Tools', 'Settings']) {
@@ -25,7 +26,7 @@ void main() {
   });
 
   testWidgets('each destination shows its screen', (tester) async {
-    await tester.pumpWidget(const PaperWardenApp());
+    await tester.pumpWidget(const ProviderScope(child: PaperWardenApp()));
     const screens = <String, Type>{
       'Files': FilesScreen,
       'Tools': ToolsScreen,
@@ -41,7 +42,7 @@ void main() {
   });
 
   testWidgets('tabs keep their state when switching', (tester) async {
-    await tester.pumpWidget(const PaperWardenApp());
+    await tester.pumpWidget(const ProviderScope(child: PaperWardenApp()));
     final homeBefore = tester.element(find.byType(HomeScreen));
 
     await tester.tap(_destination('Tools'));
@@ -56,7 +57,7 @@ void main() {
   });
 
   testWidgets('settings shortcut opens the Settings tab', (tester) async {
-    await tester.pumpWidget(const PaperWardenApp());
+    await tester.pumpWidget(const ProviderScope(child: PaperWardenApp()));
     // The bottom-navigation destination carries the same tooltip, so look
     // only inside the visible page.
     Finder shortcut() => find.descendant(
@@ -75,14 +76,14 @@ void main() {
     tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
     addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
 
-    await tester.pumpWidget(const PaperWardenApp());
+    await tester.pumpWidget(const ProviderScope(child: PaperWardenApp()));
 
     final context = tester.element(find.byType(HomeScreen));
     expect(Theme.of(context).brightness, Brightness.dark);
   });
 
   testWidgets('shows the on-device promise', (tester) async {
-    await tester.pumpWidget(const PaperWardenApp());
+    await tester.pumpWidget(const ProviderScope(child: PaperWardenApp()));
     final footer = find.text('Processed on this device');
     await tester.scrollUntilVisible(
       footer,
