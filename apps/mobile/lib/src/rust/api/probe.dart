@@ -87,5 +87,8 @@ enum BridgeErrorKind {
 
   /// A file could not be read.
   unreadable,
+
+  /// The local database failed.
+  storage,
   ;
 }

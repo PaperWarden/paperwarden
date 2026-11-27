@@ -612,6 +612,8 @@ dependencies = [
  "flutter_rust_bridge",
  "paperwarden-core",
  "paperwarden-pdf-scan",
+ "paperwarden-store",
+ "rusqlite",
 ]
 
 [[package]]
