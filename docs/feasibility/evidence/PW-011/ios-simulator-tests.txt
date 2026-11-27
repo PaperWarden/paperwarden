@@ -1,0 +1,9 @@
+running 0 tests
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+running 5 tests
+test renders_stay_inside_the_pixel_box ... ok
+test renders_and_extracts_the_one_page_fixture ... ok
+test malformed_and_hostile_files_finish_quickly ... ok
+test reads_every_page_and_the_newest_revision ... ok
+test renders_through_the_isolated_job_runner ... ok
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.65s

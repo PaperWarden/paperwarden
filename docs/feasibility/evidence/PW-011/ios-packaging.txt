@@ -1,0 +1,22 @@
+## lipo -info
+Non-fat file: third_party/pdfium/ios-device-arm64/lib/pdfium.framework/pdfium is architecture: arm64
+## LC_BUILD_VERSION
+      cmd LC_BUILD_VERSION
+  cmdsize 32
+ platform 2
+    minos 17.0
+      sdk 26.0
+## Install name and linked libraries
+third_party/pdfium/ios-device-arm64/lib/pdfium.framework/pdfium:
+	@rpath/pdfium.framework/pdfium (compatibility version 0.0.0, current version 0.0.0)
+	/System/Library/Frameworks/Foundation.framework/Foundation (compatibility version 300.0.0, current version 4040.1.0)
+	/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation (compatibility version 150.0.0, current version 4040.1.0)
+	/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics (compatibility version 64.0.0, current version 1957.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1356.0.0)
+## Size in bytes (binary, gzip -9)
+7021200
+ 3219521
+## Exported FPDF functions
+433
+<runner temp>/pdfium.framework: valid on disk
+<runner temp>/pdfium.framework: satisfies its Designated Requirement

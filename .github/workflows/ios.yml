@@ -6,12 +6,16 @@ on:
       - "apps/mobile/**"
       - "core/**"
       - ".github/workflows/ios.yml"
+      - "scripts/fetch_pdfium.py"
+      - "tests/corpus/**"
   push:
     branches: [main]
     paths:
       - "apps/mobile/**"
       - "core/**"
       - ".github/workflows/ios.yml"
+      - "scripts/fetch_pdfium.py"
+      - "tests/corpus/**"
 
 permissions:
   contents: read
@@ -54,3 +58,103 @@ jobs:
         run: |
           cargo test -p paperwarden-store --locked
           cargo build -p paperwarden-store --release --locked --target aarch64-apple-ios
+
+  # PDFium on iOS (PW-011): the pinned, verified builds are checked as an app
+  # would ship them, and the PDFium tests and probe run on an iOS simulator.
+  pdfium-ios:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    defaults:
+      # Explicit bash runs with pipefail, so a failure piped into tee fails the step.
+      run: {working-directory: core, shell: bash}
+    env:
+      DEVICE_LIB: ${{ github.workspace }}/third_party/pdfium/ios-device-arm64/lib
+      SIM_LIB: ${{ github.workspace }}/third_party/pdfium/ios-simulator-arm64/lib
+      EVIDENCE: ${{ github.workspace }}/evidence/PW-011
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable action
+        with:
+          toolchain: "1.98.0"
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+      - name: Fetch the pinned PDFium builds for iOS devices and the simulator
+        run: |
+          python3 ../scripts/fetch_pdfium.py ios-device-arm64
+          python3 ../scripts/fetch_pdfium.py ios-simulator-arm64
+          # Simulator code must carry a signature; ad hoc is enough there.
+          codesign --force --sign - --timestamp=none "$SIM_LIB/pdfium.framework"
+          mkdir -p "$EVIDENCE"
+      - name: The device framework is a signable, self-contained arm64 framework
+        run: |
+          framework="$DEVICE_LIB/pdfium.framework"
+          {
+            echo "## lipo -info"; lipo -info "$framework/pdfium"
+            echo "## LC_BUILD_VERSION"; otool -l "$framework/pdfium" | grep -A4 LC_BUILD_VERSION
+            echo "## Install name and linked libraries"; otool -L "$framework/pdfium"
+            echo "## Size in bytes (binary, gzip -9)"
+            stat -f %z "$framework/pdfium"; gzip -9 -c "$framework/pdfium" | wc -c
+            echo "## Exported FPDF functions"; nm -gU "$framework/pdfium" | grep -c ' T _FPDF'
+          } | tee "$EVIDENCE/ios-packaging.txt"
+          # Only Apple system frameworks and libSystem may be linked.
+          if otool -L "$framework/pdfium" | tail -n +2 | grep -v -e '@rpath/pdfium.framework' -e '/System/Library/Frameworks/' -e '/usr/lib/libSystem'; then
+            echo "PDFium links an unexpected library" >&2; exit 1
+          fi
+          # The app must not promise an iOS version PDFium cannot run on (ADR-0007).
+          minos=$(otool -l "$framework/pdfium" | awk '/LC_BUILD_VERSION/ {found = 1} found && $1 == "minos" {print $2; exit}')
+          grep -o 'IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*' ../apps/mobile/ios/Runner.xcodeproj/project.pbxproj | awk '{print $3}' | sort -u | while read -r target; do
+            if [ "$(printf '%s\n%s\n' "$minos" "$target" | sort -V | head -1)" != "$minos" ]; then
+              echo "The app targets iOS $target, below PDFium's minimum $minos" >&2; exit 1
+            fi
+          done
+          # PDFium must not import any network API (PRODUCT_INVARIANTS.md 1).
+          nm -u "$framework/pdfium" | sed 's/^ *U //' > "$EVIDENCE/ios-imports.txt"
+          if grep -E '^_(socket|connect|getaddrinfo|gethostbyname|CFSocket|CFStream|CFHTTP|nw_|SCNetwork)' "$EVIDENCE/ios-imports.txt"; then
+            echo "PDFium imports a network API" >&2; exit 1
+          fi
+          # An app embeds and signs the framework; ad hoc signing proves it can be.
+          cp -R "$framework" "$RUNNER_TEMP/pdfium.framework"
+          codesign --force --sign - --timestamp=none "$RUNNER_TEMP/pdfium.framework"
+          codesign --verify --verbose "$RUNNER_TEMP/pdfium.framework" 2>&1 | tee -a "$EVIDENCE/ios-packaging.txt"
+          # Device and simulator builds combine into one XCFramework for Xcode.
+          xcodebuild -create-xcframework             -framework "$framework" -framework "$SIM_LIB/pdfium.framework"             -output "$RUNNER_TEMP/pdfium.xcframework" | tee -a "$EVIDENCE/ios-packaging.txt"
+          plutil -p "$RUNNER_TEMP/pdfium.xcframework/Info.plist" | tee -a "$EVIDENCE/ios-packaging.txt"
+      - name: The PDF crate and probe build for iOS devices
+        run: cargo build -p paperwarden-pdf --release --locked --target aarch64-apple-ios --example pdf_probe
+      - name: Boot an iOS simulator
+        run: |
+          udid=$(xcrun simctl list devices available --json | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          print(next(d["udid"] for runtime, ds in sorted(devices.items(), reverse=True)
+                     if "iOS" in runtime for d in ds if d["name"].startswith("iPhone")))')
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl list devices booted | tee "$EVIDENCE/simulator.txt"
+          sw_vers | tee -a "$EVIDENCE/simulator.txt"
+      - name: PDFium renders the corpus on the iOS simulator
+        env:
+          CARGO_TARGET_AARCH64_APPLE_IOS_SIM_RUNNER: xcrun simctl spawn booted
+          SIMCTL_CHILD_PAPERWARDEN_CORPUS: ${{ github.workspace }}/tests/corpus
+          SIMCTL_CHILD_TMPDIR: ${{ runner.temp }}
+        run: |
+          export SIMCTL_CHILD_PAPERWARDEN_PDFIUM_LIB="$SIM_LIB/pdfium.framework/pdfium"
+          cargo test -p paperwarden-pdf --locked --target aarch64-apple-ios-sim --tests -- --ignored 2>&1             | tee "$EVIDENCE/ios-simulator-tests.txt"
+          # Belt and braces: the spawned tests must have run and passed.
+          grep -q 'test result: ok. 5 passed' "$EVIDENCE/ios-simulator-tests.txt"
+      - name: Probe every corpus PDF on the iOS simulator
+        run: |
+          cargo build -p paperwarden-pdf --release --locked --target aarch64-apple-ios-sim --example pdf_probe
+          probe="$PWD/target/aarch64-apple-ios-sim/release/examples/pdf_probe"
+          out="$RUNNER_TEMP/probe"
+          find "$GITHUB_WORKSPACE/tests/corpus" -name '*.pdf' | sort | while IFS= read -r pdf; do
+            xcrun simctl spawn booted "$probe" "$SIM_LIB/pdfium.framework/pdfium" "$pdf" "$out"               || echo "{\"file\":\"$pdf\",\"outcome\":\"probe exited $?\"}"
+          done | sed "s#$GITHUB_WORKSPACE/tests/corpus/#corpus/#" | tee "$EVIDENCE/ios-simulator-arm64.jsonl"
+          test "$(wc -l < "$EVIDENCE/ios-simulator-arm64.jsonl")" -eq "$(find "$GITHUB_WORKSPACE/tests/corpus" -name '*.pdf' | wc -l)"
+          if [ -n "$(ls "$out"/jobs 2>/dev/null)" ]; then echo "probe left a workspace behind" >&2; exit 1; fi
+          cp "$out"/*.ppm "$EVIDENCE/"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: PW-011-ios-evidence
+          path: ${{ github.workspace }}/evidence/PW-011
+          retention-days: 14

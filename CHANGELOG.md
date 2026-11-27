@@ -50,3 +50,11 @@ All notable changes will be documented here after the first release baseline.
   by PaperWarden, and the first engine run over the corpus through the job
   runner, with evidence kept in `docs/feasibility/evidence/PW-010/`. Added two
   stress PDFs and an extreme page-size fixture to the corpus.
+- Accepted ADR-0007 (PDFium) and ADR-0006 (local data) with the maintainers'
+  decisions. Investigated each PDFium corpus mismatch and added a `repair`
+  corpus outcome for recoverable PDFs, which open with a warning. The PDFium
+  fetch now uses HTTPS only.
+- Proved PDFium rendering on iOS (PW-011): the corpus runs on an iOS simulator
+  in CI with the same results as Android, and the device framework is checked
+  for architecture, linked libraries, network imports and signing. Raised the
+  minimum iOS version to 17.0, which PDFium requires.

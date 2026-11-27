@@ -13,3 +13,8 @@ workspace = true
 [dependencies]
 paperwarden-core = { path = "../.." }
 pdfium-render = { version = "0.9.6", default-features = false, features = ["pdfium_8125", "thread_safe"] }
+
+# Peak memory for the probe on Apple platforms, which have no /proc
+# (getrusage through a safe wrapper; the workspace forbids unsafe code).
+[target.'cfg(target_vendor = "apple")'.dev-dependencies]
+nix = { version = "0.32", default-features = false, features = ["resource"] }
