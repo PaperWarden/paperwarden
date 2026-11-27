@@ -13,7 +13,7 @@ shared lint policy with `[lints] workspace = true`.
 
 `core/crates/store` (`paperwarden-store`) is the local database: settings, job
 history, workflows and the optional contentless FTS5 index, on SQLite compiled
-from source (ADR-0006, Proposed).
+from source (ADR-0006).
 
 `core/crates/pdf` (`paperwarden-pdf`) renders PDF pages and extracts text with
 PDFium, loaded at run time from a library fetched by `scripts/fetch_pdfium.py`

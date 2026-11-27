@@ -1,6 +1,6 @@
 # ADR-0006: Use SQLite with contentless FTS5 for local data
 
-**Status:** Proposed  
+**Status:** Accepted  
 **Date:** 2026-11-27  
 **Deciders:** PaperWarden maintainers
 
@@ -25,11 +25,22 @@ in CI for iOS.
 - The database is not encrypted by PaperWarden. It lives in app-private
   storage, relies on Android file-based encryption and iOS Data Protection,
   and is excluded from backups and device transfer.
+- **Automatic cloud backup stays off.** Moving to a new phone will instead be
+  a manual export and import of settings and workflows, which the user starts
+  and whose file the user keeps. That feature is still to be built. Job history
+  and the index are not exported.
+- **Job history keeps file names**, for usability. The user can:
+  - turn history off entirely, so nothing new is recorded;
+  - hide file names, so new entries record no display name;
+  - clear existing history, which purges it from every database file.
 
 ## Consequences
 
 - About 1.8 MB of SQLite code per ABI before linker garbage collection.
 - No search snippets, because the index does not keep document text.
-- Settings and history do not move to a new phone through OS backup.
+- Settings and history do not move to a new phone through OS backup; until
+  export and import exist, a new phone starts with default settings.
+- History with file names on is more useful and less private; the controls
+  above put that choice with the user.
 - Revisit encryption (for example SQLCipher) only if the threat model adds
   protection of an unlocked device.
