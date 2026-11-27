@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="10" height="10">
+<script>/* PaperWarden inert corpus marker */</script>
+<image href="https://paperwarden.invalid/pixel.png" width="10" height="10"/>
+<use xlink:href="https://paperwarden.invalid/sprite.svg#icon"/>
+<rect width="10" height="10" fill="white" onload="/* inert */"/>
+</svg>

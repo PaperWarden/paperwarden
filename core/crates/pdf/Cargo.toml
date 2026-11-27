@@ -1,0 +1,15 @@
+[package]
+name = "paperwarden-pdf"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "PDF rendering and text extraction through PDFium (feasibility, PW-010)"
+
+[lints]
+workspace = true
+
+[dependencies]
+paperwarden-core = { path = "../.." }
+pdfium-render = { version = "0.9.6", default-features = false, features = ["pdfium_8125", "thread_safe"] }

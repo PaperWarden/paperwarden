@@ -28,3 +28,6 @@ Thumbs.db
 .paperwarden-work/
 tmp/
 
+
+# PDFium builds fetched by scripts/fetch_pdfium.py (verified, not committed)
+/third_party/pdfium/

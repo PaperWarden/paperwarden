@@ -1,0 +1,47 @@
+//! Throwaway PW-010 diagnostic (not committed): asks PDFium what it did with
+//! each file. Uses raw bindings, which PaperWarden's own code may not.
+use pdfium_render::prelude::*;
+use std::ffi::c_int;
+
+fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    let pdfium = Pdfium::new(Pdfium::bind_to_library(&args[1]).expect("bind"));
+    let b = pdfium.bindings();
+    for path in &args[2..] {
+        let bytes = std::fs::read(path).expect("read");
+        let name = path.rsplit('/').next().unwrap_or(path);
+        unsafe {
+            let doc = b.FPDF_LoadMemDocument64(&bytes, None);
+            if doc.is_null() {
+                println!("{name}\topen=error {}", b.FPDF_GetLastError());
+                continue;
+            }
+            let valid_xref = b.FPDF_DocumentHasValidCrossReferenceTable(doc) != 0;
+            let mut version: c_int = 0;
+            b.FPDF_GetFileVersion(doc, &mut version);
+            let trailers = b.FPDF_GetTrailerEnds(doc, std::ptr::null_mut(), 0);
+            let js = b.FPDFDoc_GetJavaScriptActionCount(doc);
+            let pages = b.FPDF_GetPageCount(doc);
+            let mut actions = Vec::new();
+            for index in 0..pages.min(5) {
+                let page = b.FPDF_LoadPage(doc, index);
+                if page.is_null() { actions.push(format!("p{index}:load-failed")); continue; }
+                let mut start: c_int = 0;
+                let mut link = std::ptr::null_mut();
+                while b.FPDFLink_Enumerate(page, &mut start, &mut link) != 0 {
+                    let action = b.FPDFLink_GetAction(link);
+                    let kind = if action.is_null() { 99 } else { b.FPDFAction_GetType(action) };
+                    actions.push(format!("p{index}:link-action-type-{kind}"));
+                }
+                for aa in 0..2 {
+                    let action = b.FPDF_GetPageAAction(page, aa);
+                    if !action.is_null() { actions.push(format!("p{index}:page-aa{aa}-type-{}", b.FPDFAction_GetType(action))); }
+                }
+                actions.push(format!("p{index}:annots={}", b.FPDFPage_GetAnnotCount(page)));
+                b.FPDF_ClosePage(page);
+            }
+            println!("{name}\topen=ok\tvalid_xref={valid_xref}\tversion={version}\ttrailers={trailers}\tjs_actions={js}\tpages={pages}\t{}", actions.join(","));
+            b.FPDF_CloseDocument(doc);
+        }
+    }
+}

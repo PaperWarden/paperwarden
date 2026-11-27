@@ -20,3 +20,21 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - run: cargo test --workspace --all-features --locked
+
+  # PDFium tests are ignored by default because they need the library. Fetch
+  # the pinned, verified Linux build and run them (PW-010).
+  pdfium:
+    runs-on: ubuntu-latest
+    defaults:
+      run: {working-directory: core}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable action
+        with: {toolchain: "1.98.0"}
+      - name: The PDFium fetch speaks only HTTPS and refuses V8 or XFA builds
+        run: python3 -m unittest discover -s ../tests/scripts -p test_fetch_pdfium.py -v
+      - run: python3 ../scripts/fetch_pdfium.py linux-x64
+      - name: PDFium renders the corpus
+        env:
+          PAPERWARDEN_PDFIUM_LIB: ${{ github.workspace }}/third_party/pdfium/linux-x64/lib/libpdfium.so
+        run: cargo test -p paperwarden-pdf --locked -- --ignored
