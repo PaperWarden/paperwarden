@@ -55,7 +55,10 @@ flutter build apk --debug
 
 Run `python scripts/check_invariants.py`, `python scripts/check_licenses.py`, and
 `python scripts/check_corpus.py` before opening a pull request that changes
-guardrails, dependencies, or fixtures.
+guardrails, dependencies, or fixtures. After changing the invariant checks, also
+run `python -m unittest discover -s tests/scripts`.
+[docs/ci/invariant-checks.md](docs/ci/invariant-checks.md) states what each
+check proves and what it does not.
 
 ## Contributing
 
