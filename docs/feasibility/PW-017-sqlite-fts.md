@@ -4,7 +4,7 @@
 **Date:** 2026-11-27  
 **Result:** Feasible. Proven on Windows and on an Android emulator (x86_64,
 Android 15); iOS is proven in CI only (macOS tests plus an iOS device build).  
-**Decision record:** ADR-0006 (Proposed)
+**Decision record:** ADR-0006 (Accepted 2026-11-27)
 
 ## What was built
 
@@ -99,8 +99,9 @@ packages.
 1. **Android Auto Backup was on.** The manifest did not set `allowBackup`, so
    Android's default would copy app data, including future job history and
    index, to the user's cloud backup and to new devices. Turned off here (see
-   above). Settings therefore do not move to a new phone; that trade-off is a
-   product decision for maintainers.
+   above). Settings therefore do not move to a new phone. *Decided
+   (2026-11-27): backup stays off; a manual export and import of settings and
+   workflows will cover moving phones (ADR-0006).*
 2. **Opening a newer database must not write to it.** The first version
    switched to WAL before checking the schema version, which writes the file
    header. Migration checks now run first; a test verifies the file stays
@@ -117,5 +118,8 @@ packages.
 - Expose the store through the bridge and create it from the platform
   adapters: app-private path, iOS `NSFileProtectionComplete` and
   `isExcludedFromBackup`.
-- Decide whether job history stores display names at all, or only on request.
+- Job history keeps display names, with user controls to turn history off,
+  hide file names and clear it (decided 2026-11-27, ADR-0006). The store
+  already clears without residue; the switches are still to be built.
+- Manual export and import of settings and workflows (ADR-0006).
 - Measure linked size and search latency in the app with a realistic index.
