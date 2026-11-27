@@ -12,11 +12,13 @@ fails when a rule is broken, not just on a panic.
 | `archive_entry_path` | `archive::EntryPath::parse` and `parse_cp437` | For UTF-8 and legacy CP437 names alike: accepted names respect every length and depth bound; each component is a plain name with no separator, `:`, control character, text-direction control or `.`/`..`; joined to a directory the path stays inside it on the platform's own path rules; re-parsing the canonical form gives the same result; ASCII names mean the same in both encodings. |
 | `magic_bytes` | `validation::MagicBytes` | Never panics on any header or offset, including offsets near `usize::MAX`, and accepts exactly the inputs that carry the signature. |
 | `job_pipeline` | `JobRunner`, staging, limits, verification, export, cleanup | For any input file and any stub-engine behaviour (copy, no output, oversized output, engine error, cancellation, wrong output): invalid input never becomes exportable, export refuses to overwrite the original, an exported file holds exactly the verified output, the original is never modified, and no workspace remains afterwards. |
+| `store_search` | `paperwarden_store::Store::search`, `index_document`, `remove_document` | Any query is accepted as literal text and never errors, any text can be indexed and removed, and an unrelated indexed document stays findable. |
 
 The targets were checked against planted bugs: removing the backslash rule from
 `EntryPath` made `archive_entry_path` fail within about 1,500 runs without
-seeds, and making export overwrite existing files made `job_pipeline` fail on
-its seeds.
+seeds, making export overwrite existing files made `job_pipeline` fail on
+its seeds, and letting NUL through to an FTS5 query made `store_search` fail
+within about 40 runs without seeds.
 
 ## Not covered yet
 

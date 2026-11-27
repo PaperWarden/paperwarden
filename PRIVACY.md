@@ -10,7 +10,10 @@ PaperWarden-operated service.
 - Originals are preserved unless the user explicitly chooses to replace or delete
   a file through the operating system.
 - Temporary workspaces are isolated and removed after every terminal job state.
-- Local indexing is opt-in and can be cleared.
+- Local indexing is opt-in and can be cleared. The index stores search terms,
+  never document text, and clearing it removes them from the database files.
+- App data (settings, job history, the index) is excluded from cloud backup and
+  device-to-device transfer.
 - Sanitization exports a new copy and provides a before/after report.
 
 ## Diagnostics

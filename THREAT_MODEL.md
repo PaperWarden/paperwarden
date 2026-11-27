@@ -43,6 +43,15 @@ image, OCR language pack, or imported workflow can be attacker-controlled.
 - Cosmetic-only redaction that leaves extractable content.
 - Compromised dependency or release pipeline.
 
+## Data at rest
+
+Local data relies on Android file-based encryption and iOS Data Protection in
+app-private storage, and is excluded from backups. This protects a lost or
+stolen device that is off or locked. It does not protect an unlocked device in
+someone else's hands, or a rooted or jailbroken one; keeping the index
+contentless and history clearable limits what such an attacker can read
+(`docs/feasibility/PW-017-sqlite-fts.md`).
+
 ## Known unknowns
 
 Sandboxing strength, native engine packaging, engine update cadence, cryptographic

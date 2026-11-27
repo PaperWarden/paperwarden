@@ -11,6 +11,10 @@ ADR-0002). Flutter owns the UI; Kotlin and Swift stay thin platform adapters.
 `core/crates/<name>`, are added to `members` in `Cargo.toml`, and opt into the
 shared lint policy with `[lints] workspace = true`.
 
+`core/crates/store` (`paperwarden-store`) is the local database: settings, job
+history, workflows and the optional contentless FTS5 index, on SQLite compiled
+from source (ADR-0006).
+
 `core/crates/bridge` (`paperwarden_bridge`) is the Flutter-Rust bridge
 (ADR-0005). Its hand-written API lives in `src/api`; `src/frb_generated.rs`
 is generated. It defines its own lint table because generated FFI glue needs

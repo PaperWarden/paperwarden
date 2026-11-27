@@ -3,7 +3,7 @@
 # in `members`. Fuzz harnesses stay outside this workspace in `/fuzz`.
 [workspace]
 resolver = "2"
-members = [".", "crates/bridge"]
+members = [".", "crates/bridge", "crates/store"]
 
 [workspace.package]
 edition = "2021"

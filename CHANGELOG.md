@@ -32,3 +32,7 @@ All notable changes will be documented here after the first release baseline.
   that block traversal, absolute paths, backslashes, colons, control characters
   and text-direction spoofing, and decode legacy CP437 names. Fixed the scheduled fuzz workflow, which had never
   run successfully, and added a short fuzz run to pull requests.
+- Proved local storage on SQLite with FTS5 (`paperwarden-store`): settings, job
+  history, workflows, an opt-in contentless search index that clears without
+  residue, and forward-only migrations. Tests pass on an Android emulator.
+  Android backup and device transfer of app data are now off.
