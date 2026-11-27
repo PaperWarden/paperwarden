@@ -12,6 +12,7 @@ workspace = true
 
 [dependencies]
 paperwarden-core = { path = "../.." }
+paperwarden-pdf-scan = { path = "../pdf-scan" }
 pdfium-render = { version = "0.9.6", default-features = false, features = ["pdfium_8125", "thread_safe"] }
 
 # Peak memory for the probe on Apple platforms, which have no /proc

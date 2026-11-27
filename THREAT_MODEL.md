@@ -57,3 +57,7 @@ contentless and history clearable limits what such an attacker can read
 Sandboxing strength, native engine packaging, engine update cadence, cryptographic
 signing, and user-supplied language packs remain unresolved until feasibility work.
 
+The PDF pre-check (`docs/security/pdf-precheck.md`) does not yet bound inline
+images, sampled functions, Type 3 fonts or JBIG2 and CCITT codestreams beyond
+their declared size, and it refuses encrypted PDFs rather than measure them.
+

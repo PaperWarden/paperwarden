@@ -11,7 +11,9 @@
 //! job is written to `<out-dir>` as PPM.
 
 use paperwarden_core::validation::MagicBytes;
-use paperwarden_core::{CancellationToken, JobId, JobLimits, JobRunner, Operation, Outcome};
+use paperwarden_core::{
+    CancellationToken, JobError, JobId, JobLimits, JobRunner, Operation, Outcome,
+};
 use paperwarden_pdf::{PdfEngine, PpmVerifier, RenderProcessor};
 use std::error::Error;
 use std::path::{Path, PathBuf};
@@ -31,6 +33,17 @@ fn json_string(value: &str) -> String {
     }
     out.push('"');
     out
+}
+
+/// A JSON list of the items' names, or `null` when the pre-check did not run.
+fn json_list<T: std::fmt::Debug>(items: Option<&Vec<T>>) -> String {
+    items.map_or("null".to_owned(), |items| {
+        let names: Vec<String> = items
+            .iter()
+            .map(|item| json_string(&format!("{item:?}")))
+            .collect();
+        format!("[{}]", names.join(","))
+    })
 }
 
 /// Peak resident memory of this process in KiB, where the OS reports it.
@@ -99,15 +112,19 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
         Err(report) => match report.outcome {
+            Outcome::Stopped(JobError::LimitExceeded(reason)) => format!("limit: {reason}"),
             Outcome::Stopped(error) => format!("stopped: {error}"),
             other => format!("{other:?}"),
         },
     };
     let stats = processor.stats();
     println!(
-        "{{\"file\":{},\"outcome\":{},\"pages\":{},\"rendered\":{},\"open_ms\":{:.1},\"render_ms\":{:.1},\"peak_rss_kib\":{},\"first_page_text\":{}}}",
+        "{{\"file\":{},\"outcome\":{},\"damage\":{},\"active_content\":{},\"precheck_ms\":{:.1},\"pages\":{},\"rendered\":{},\"open_ms\":{:.1},\"render_ms\":{:.1},\"peak_rss_kib\":{},\"first_page_text\":{}}}",
         json_string(pdf),
         json_string(&outcome),
+        json_list(stats.precheck.as_ref().map(|report| &report.damage)),
+        json_list(stats.precheck.as_ref().map(|report| &report.active_content)),
+        stats.precheck_time.as_secs_f64() * 1000.0,
         stats.pages,
         stats.rendered,
         stats.open_time.as_secs_f64() * 1000.0,

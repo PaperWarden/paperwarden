@@ -12,11 +12,15 @@
 
 #![cfg(test)]
 
+use paperwarden_core::engine::{EngineError, Interruption};
 use paperwarden_core::validation::MagicBytes;
 use paperwarden_core::{
     CancellationToken, JobError, JobId, JobLimits, JobRunner, Operation, Outcome,
 };
-use paperwarden_pdf::{PdfEngine, PdfError, PpmVerifier, RenderProcessor, MAX_RENDER_PIXELS};
+use paperwarden_pdf::{
+    precheck, PdfEngine, PdfError, PpmVerifier, RenderProcessor, MAX_RENDER_PIXELS,
+};
+use paperwarden_pdf_scan::{ActiveContent, Damage, ScanLimits};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
@@ -207,8 +211,39 @@ fn renders_through_the_isolated_job_runner() {
         .expect_err("malformed PDF must fail");
     assert_eq!(
         report.outcome,
-        Outcome::Stopped(JobError::EngineFailed("the PDF could not be opened"))
+        Outcome::Stopped(JobError::EngineFailed("the PDF has no content"))
     );
+
+    // The pre-check stops the bomb before PDFium inflates it.
+    std::fs::write(&input, corpus("security/pdf/flate-bomb.pdf")).expect("write input");
+    let report = runner
+        .run(
+            JobId::new("pdf-3").expect("id"),
+            &input,
+            &operation,
+            &CancellationToken::new(),
+        )
+        .expect_err("the bomb must be stopped");
+    assert!(
+        matches!(report.outcome, Outcome::Stopped(JobError::LimitExceeded(_))),
+        "{:?}",
+        report.outcome
+    );
+    assert_eq!(processor.stats().pages, 0, "PDFium never opened the bomb");
+
+    // A recoverable file renders, and the damage is recorded for the warning.
+    std::fs::write(&input, corpus("malformed/pdf/bad-xref-offsets.pdf")).expect("write input");
+    let ready = runner
+        .run(
+            JobId::new("pdf-4").expect("id"),
+            &input,
+            &operation,
+            &CancellationToken::new(),
+        )
+        .expect("repairable PDF renders");
+    let _ = ready.finish();
+    let damage = processor.stats().precheck.expect("pre-check ran").damage;
+    assert_eq!(damage, vec![Damage::CrossReference]);
     assert_eq!(
         std::fs::read_dir(root.join("jobs")).expect("jobs").count(),
         0,
@@ -226,4 +261,31 @@ fn missing_library_is_reported_not_panicked() {
     }
     let missing = PdfEngine::load(Path::new("/nonexistent/libpdfium.so"));
     assert!(matches!(missing, Err(PdfError::Library(_))));
+}
+
+#[test]
+fn precheck_maps_limits_interruptions_and_findings() {
+    let limits = ScanLimits::default();
+    let bomb = corpus("security/pdf/flate-bomb.pdf");
+    assert!(matches!(
+        precheck(&bomb, &limits, || Ok(())),
+        Err(EngineError::LimitExceeded(_))
+    ));
+    let pages = corpus("valid/pdf/many-pages-200.pdf");
+    assert!(matches!(
+        precheck(&pages, &limits, || Err(Interruption::TimedOut)),
+        Err(EngineError::Interrupted(Interruption::TimedOut))
+    ));
+    let script = corpus("security/pdf/javascript-openaction.pdf");
+    let report = precheck(&script, &limits, || Ok(())).expect("allowed");
+    assert_eq!(report.active_content, vec![ActiveContent::JavaScript]);
+    assert!(matches!(
+        precheck(
+            b"%PDF-1.7
+",
+            &limits,
+            || Ok(())
+        ),
+        Err(EngineError::Failed("the PDF has no content"))
+    ));
 }

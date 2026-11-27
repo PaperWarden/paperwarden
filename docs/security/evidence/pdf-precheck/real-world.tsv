@@ -1,0 +1,36 @@
+file	producer	result	damage	active	objects	streams	decoded_bytes	time
+confused_fox.pdf	Figma	allowed	[]	[]	81	36	28721	1.2 ms
+lm-info.pdf	xdvipdfmx (0.7.5	allowed	[]	[]	526	151	2114344	12.5 ms
+tstlmot1.pdf	GPL Ghostscript 8.63	allowed	[]	[]	359	86	483362	5.3 ms
+tstlmot4.pdf	GPL Ghostscript 8.63	allowed	[]	[]	427	154	374290	12.5 ms
+tstlmqx.pdf	GPL Ghostscript 8.63	allowed	[]	[]	425	152	368417	5.1 ms
+tstlmt1.pdf	GPL Ghostscript 8.63	allowed	[]	[]	389	143	353874	11.5 ms
+tstlmts1.pdf	GPL Ghostscript 8.63	allowed	[]	[]	674	244	571014	8.0 ms
+algorithm2e.pdf	pdfTeX-1.40.18	allowed	[]	[]	2119	114	1256009	9.6 ms
+appendix.pdf	pdfTeX-1.40.20	allowed	[]	[]	170	47	427740	4.1 ms
+bigintcalc.pdf	pdfTeX-1.40.20	allowed	[]	[Uri]	3389	118	1159238	10.5 ms
+bitset.pdf	pdfTeX-1.40.20	allowed	[]	[Uri]	2945	102	1220763	10.1 ms
+gettitlestring.pdf	pdfTeX-1.40.20	allowed	[]	[Uri]	986	49	494700	4.5 ms
+grfext.pdf	pdfTeX-1.40.20	allowed	[]	[Uri]	869	47	461323	4.0 ms
+hycolor.pdf	pdfTeX-1.40.21	allowed	[]	[Uri]	1873	73	741447	6.8 ms
+ifnextok.pdf	pdfTeX-1.40.3	allowed	[]	[Uri]	388	43	285772	2.8 ms
+testIfNT.pdf	pdfTeX-1.40.3	allowed	[]	[]	22	5	12731	0.3 ms
+infwarerr.pdf	pdfTeX-1.40.20	allowed	[]	[Uri]	860	45	438686	4.0 ms
+intcalc.pdf	pdfTeX-1.40.20	allowed	[]	[Uri]	2813	107	1012629	9.1 ms
+kvdefinekeys.pdf	pdfTeX-1.40.20	allowed	[]	[Uri]	638	40	410116	3.7 ms
+natbib.pdf	pdfTeX-1.40.10	allowed	[]	[]	158	44	388843	3.0 ms
+natnotes.pdf	pdfTeX-1.40.10	allowed	[]	[]	69	18	176059	1.7 ms
+parskip-code.pdf	pdfTeX-1.40.21	allowed	[]	[]	108	29	272963	2.9 ms
+parskip.pdf	pdfTeX-1.40.21	allowed	[]	[]	82	22	198997	1.9 ms
+pdfescape.pdf	pdfTeX-1.40.20	allowed	[]	[Uri]	1706	68	658677	6.3 ms
+placeins-doc.pdf	pdfTeX-1.40.11	allowed	[]	[Uri]	76	17	276440	2.7 ms
+psnfss2e.pdf	pdfTeX-1.40.21	allowed	[]	[]	315	34	381145	3.1 ms
+refcount.pdf	pdfTeX-1.40.20	allowed	[]	[Uri]	1050	53	524588	5.8 ms
+relsize-doc.pdf	pdfTeX-1.40.12	allowed	[]	[]	98	23	348436	2.9 ms
+stringenc.pdf	pdfTeX-1.40.20	allowed	[]	[Uri]	11672	247	2898018	29.8 ms
+uniquecounter.pdf	pdfTeX-1.40.20	allowed	[]	[Uri]	762	43	425892	4.0 ms
+miktex.pdf	Apache FOP Version 1.1	allowed	[]	[Uri]	2064	137	1485004	9.6 ms
+edge.pdf	Microsoft Edge (Skia/PDF)	allowed	[]	[]	30	8	85623	2.6 ms
+matplotlib.pdf	Matplotlib 3.10	allowed	[]	[]	28	11	249770	3.6 ms
+pillow-scan.pdf	Pillow 12.2	allowed	[]	[]	12	6	0	24.2 ms
+reportlab.pdf	ReportLab 5.0	allowed	[]	[Uri]	96	31	1455010	13.7 ms

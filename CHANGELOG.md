@@ -58,3 +58,10 @@ All notable changes will be documented here after the first release baseline.
   in CI with the same results as Android, and the device framework is checked
   for architecture, linked libraries, network imports and signing. Raised the
   minimum iOS version to 17.0, which PDFium requires.
+- Added the PDF pre-check (`paperwarden-pdf-scan`, ADR-0007), which runs before
+  PDFium opens any document. It measures every stream by decoding it under
+  size, ratio, image and total bounds, and bounds nesting, objects and
+  revisions. It detects recoverable damage and flags active content, including
+  inside object streams. Every corpus PDF now meets its outcome at the engine
+  level. Resource bounds now stop a job with a typed `LimitExceeded` error, and
+  a `pdf_scan` fuzz target was added.
