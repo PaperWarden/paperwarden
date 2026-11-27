@@ -247,12 +247,12 @@
       "category": "malformed",
       "format": "pdf",
       "media_type": "application/pdf",
-      "outcome": "reject",
+      "outcome": "repair",
       "requires": [
         "pdf"
       ],
       "purpose": "Cross-reference table whose catalog offset points past the end of the file",
-      "expected": "Reject, or repair without trusting the bad offset; never read out of bounds",
+      "expected": "Repair: rebuild the cross-reference table without trusting the bad offset and open with a damaged-file warning; never read out of bounds",
       "facts": {
         "signature": "255044462d",
         "pdf_xref_valid": false
@@ -290,12 +290,12 @@
       "category": "malformed",
       "format": "pdf",
       "media_type": "application/pdf",
-      "outcome": "reject",
+      "outcome": "repair",
       "requires": [
         "pdf"
       ],
       "purpose": "PDF missing its final %%EOF marker",
-      "expected": "Reject or repair deterministically; never hang searching for the trailer",
+      "expected": "Repair deterministically and open with a damaged-file warning; never hang searching for the trailer",
       "facts": {
         "signature": "255044462d",
         "absent": [
@@ -898,12 +898,12 @@
       "category": "security",
       "format": "pdf",
       "media_type": "application/pdf",
-      "outcome": "reject",
+      "outcome": "repair",
       "requires": [
         "pdf"
       ],
       "purpose": "Stream whose /Length claims 999,999,999 bytes in a small file",
-      "expected": "Never trust /Length for allocation or reads past the end of the file",
+      "expected": "Repair: never trust /Length for allocation or reads past the end of the file; open with a damaged-file warning",
       "facts": {
         "signature": "255044462d",
         "contains": [
@@ -920,12 +920,12 @@
       "category": "security",
       "format": "pdf",
       "media_type": "application/pdf",
-      "outcome": "bound",
+      "outcome": "repair",
       "requires": [
         "pdf"
       ],
       "purpose": "Trailer whose /Prev points back at its own cross-reference section",
-      "expected": "Detect the cycle and stop; never loop forever",
+      "expected": "Detect the cycle and stop following it, then repair and open with a damaged-file warning; never loop forever",
       "facts": {
         "signature": "255044462d",
         "pdf_prev_loop": true

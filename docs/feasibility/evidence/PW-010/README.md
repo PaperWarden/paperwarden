@@ -11,5 +11,12 @@ into a 1080 x 1920 box.
   text.
 - `*.png`: the exported first page of each valid fixture and of the JavaScript
   fixture, reduced to half size. They show what PDFium drew.
+- `pdfium-diagnostics.tsv`: what PDFium itself reports for each corpus PDF
+  (`FPDF_DocumentHasValidCrossReferenceTable`, trailer count, document
+  JavaScript count, link and page actions), produced on the same emulator for
+  the mismatch investigation. `pdfium-diagnostics.rs.txt` is the throwaway tool
+  that produced it. It calls PDFium's raw bindings, which PaperWarden's own
+  code may not (`unsafe` is forbidden), so it lives outside the workspace and is
+  kept here only as source.
 
 To reproduce, see "Results on Android" in `../../PW-010-pdfium-android.md`.
