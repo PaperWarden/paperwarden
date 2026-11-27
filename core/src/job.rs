@@ -1,9 +1,25 @@
+//! Job identifiers and the lifecycle state machine.
+//!
+//! Every operation is a [`Job`] moving through [`JobState`]s. Success, failure
+//! and cancellation all end in [`JobState::Cleaned`]
+//! (`PRODUCT_INVARIANTS.md` 9). This module is pure logic and performs no I/O.
+
 use std::path::PathBuf;
 
+/// A validated job identifier.
+///
+/// Identifiers are non-empty ASCII alphanumerics and hyphens, so one can be
+/// embedded in a workspace directory name without enabling path traversal.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct JobId(String);
 
 impl JobId {
+    /// Validates `value` as a job identifier.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if `value` is empty or contains any character other
+    /// than an ASCII alphanumeric or a hyphen.
     pub fn new(value: impl Into<String>) -> Result<Self, &'static str> {
         let value = value.into();
         if value.is_empty()
@@ -16,33 +32,50 @@ impl JobId {
         Ok(Self(value))
     }
 
+    /// Returns the identifier as a string slice.
     pub fn as_str(&self) -> &str {
         &self.0
     }
 }
 
+/// A stage in the job lifecycle.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum JobState {
+    /// The user chose an input; nothing has been read yet.
     Selected,
+    /// The input passed type and structure validation.
     Validated,
+    /// An engine is transforming the input inside the workspace.
     Processing,
+    /// The output is being checked before it may be exported.
     Verifying,
+    /// A verified output awaits an explicit user export.
     ReadyToExport,
+    /// The output was written to a destination the user chose.
     Exported,
+    /// The job stopped because of an error; cleanup is still required.
     Failed,
+    /// The user cancelled the job; cleanup is still required.
     Cancelled,
+    /// The job's workspace has been removed. Terminal.
     Cleaned,
 }
 
+/// One operation on one input, tracked through its lifecycle.
 #[derive(Debug, Eq, PartialEq)]
 pub struct Job {
+    /// Unique identifier, also used to name the job's workspace.
     pub id: JobId,
+    /// The user-selected input. The core never overwrites it.
     pub input: PathBuf,
+    /// The job's isolated temporary workspace directory.
     pub workspace: PathBuf,
+    /// The current lifecycle stage.
     pub state: JobState,
 }
 
 impl Job {
+    /// Creates a job in the [`JobState::Selected`] state.
     pub fn new(id: JobId, input: PathBuf, workspace: PathBuf) -> Self {
         Self {
             id,
@@ -52,6 +85,12 @@ impl Job {
         }
     }
 
+    /// Moves the job to `next` if the lifecycle allows it.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error, leaving the state unchanged, if `next` is not a
+    /// permitted successor of the current state.
     pub fn transition(&mut self, next: JobState) -> Result<(), &'static str> {
         let allowed = matches!(
             (self.state, next),
