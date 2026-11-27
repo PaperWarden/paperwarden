@@ -21,10 +21,15 @@
 //! `N G obj` headers rather than trusting the cross-reference table, so damage
 //! cannot hide objects from the checks.
 //!
-//! **Not covered yet:** encrypted PDFs are refused, because their streams
-//! cannot be measured without decrypting them. Inline images in content
-//! streams, sampled functions and Type 3 fonts are not bounded here.
+//! **Encrypted PDFs** that open without a password (standard security
+//! handler, RC4, AES-128 or AES-256) are decrypted in memory, only to be
+//! measured, under the same bounds. Those that need a password, or use another
+//! handler, are refused.
+//!
+//! **Not covered yet:** inline images in content streams, sampled functions
+//! and Type 3 fonts are not bounded here.
 
+mod crypt;
 mod filters;
 mod scan;
 mod syntax;
@@ -190,8 +195,11 @@ pub enum ScanError {
     NotPdf,
     /// No objects at all.
     NoObjects,
-    /// The document is encrypted; its streams cannot be measured.
+    /// The document uses encryption the pre-check cannot open: another
+    /// security handler, or a malformed encryption dictionary.
     Encrypted,
+    /// The document needs a password to open.
+    PasswordRequired,
     /// A bound was exceeded.
     Limit(Limit),
     /// The checkpoint asked the scan to stop.
@@ -204,7 +212,8 @@ impl ScanError {
         match self {
             Self::NotPdf => "the file is not a PDF",
             Self::NoObjects => "the PDF has no content",
-            Self::Encrypted => "encrypted PDFs are not supported yet",
+            Self::Encrypted => "this kind of PDF encryption is not supported",
+            Self::PasswordRequired => "the PDF needs a password, which is not supported yet",
             Self::Limit(limit) => limit.reason(),
             Self::Interrupted => "the check was stopped",
         }
