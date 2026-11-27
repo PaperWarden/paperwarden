@@ -99,6 +99,13 @@ jobs:
           if otool -L "$framework/pdfium" | tail -n +2 | grep -v -e '@rpath/pdfium.framework' -e '/System/Library/Frameworks/' -e '/usr/lib/libSystem'; then
             echo "PDFium links an unexpected library" >&2; exit 1
           fi
+          # The app must not promise an iOS version PDFium cannot run on (ADR-0007).
+          minos=$(otool -l "$framework/pdfium" | awk '/LC_BUILD_VERSION/ {found = 1} found && $1 == "minos" {print $2; exit}')
+          grep -o 'IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*' ../apps/mobile/ios/Runner.xcodeproj/project.pbxproj | awk '{print $3}' | sort -u | while read -r target; do
+            if [ "$(printf '%s\n%s\n' "$minos" "$target" | sort -V | head -1)" != "$minos" ]; then
+              echo "The app targets iOS $target, below PDFium's minimum $minos" >&2; exit 1
+            fi
+          done
           # PDFium must not import any network API (PRODUCT_INVARIANTS.md 1).
           nm -u "$framework/pdfium" | sed 's/^ *U //' > "$EVIDENCE/ios-imports.txt"
           if grep -E '^_(socket|connect|getaddrinfo|gethostbyname|CFSocket|CFStream|CFHTTP|nw_|SCNetwork)' "$EVIDENCE/ios-imports.txt"; then
