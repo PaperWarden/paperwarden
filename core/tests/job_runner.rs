@@ -15,6 +15,7 @@ use paperwarden_core::{
     CancellationToken, JobError, JobId, JobLimits, JobRunner, JobState, Operation, Outcome,
     ReadyJob, Workspace,
 };
+use paperwarden_core::{Inert, Notice};
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -391,6 +392,53 @@ fn engine_error_fails_the_job() {
         Outcome::Stopped(JobError::EngineFailed("malformed cross-reference table"))
     );
     assert_eq!(report.state, JobState::Cleaned);
+    fixture.assert_clean();
+}
+
+#[test]
+fn notices_travel_with_the_result_sorted_and_once_each() {
+    let fixture = Fixture::new("notices");
+    let processor = FnProcessor(|context: &mut ProcessContext<'_>| {
+        context.notice(Notice::NotRun(Inert::WebLinks));
+        context.notice(Notice::Repaired);
+        context.notice(Notice::NotRun(Inert::Scripts));
+        context.notice(Notice::Repaired);
+        uppercase(context)
+    });
+    let ready = run(
+        &fixture,
+        &fixture.runner(),
+        &processor,
+        &FnVerifier(accept),
+        &CancellationToken::new(),
+    )
+    .expect("job ready");
+    let expected = vec![
+        Notice::Repaired,
+        Notice::NotRun(Inert::Scripts),
+        Notice::NotRun(Inert::WebLinks),
+    ];
+    assert_eq!(ready.notices(), expected.as_slice());
+    let report = ready.finish();
+    assert_eq!(report.notices, expected);
+    fixture.assert_clean();
+}
+
+#[test]
+fn a_failed_job_reports_no_notices() {
+    let fixture = Fixture::new("notices-failed");
+    let processor = FnProcessor(|context: &mut ProcessContext<'_>| {
+        context.notice(Notice::Repaired);
+        Err(EngineError::Failed("the PDF could not be opened"))
+    });
+    let report = expect_stopped(run(
+        &fixture,
+        &fixture.runner(),
+        &processor,
+        &FnVerifier(accept),
+        &CancellationToken::new(),
+    ));
+    assert!(report.notices.is_empty(), "{:?}", report.notices);
     fixture.assert_clean();
 }
 
