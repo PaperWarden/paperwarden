@@ -59,5 +59,6 @@ signing, and user-supplied language packs remain unresolved until feasibility wo
 
 The PDF pre-check (`docs/security/pdf-precheck.md`) does not yet bound inline
 images, sampled functions, Type 3 fonts or JBIG2 and CCITT codestreams beyond
-their declared size, and it refuses encrypted PDFs rather than measure them.
+their declared size. It decrypts PDFs that open without a password in memory
+to measure them, and refuses those that need one.
 
