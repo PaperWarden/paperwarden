@@ -3,6 +3,7 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api/document.dart';
 import 'api/probe.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -68,7 +69,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -642406141;
+  int get rustContentHash => -1466635674;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -85,6 +86,9 @@ abstract class RustLibApi extends BaseApi {
   bool crateApiProbeCancelHandleIsCancelled({required CancelHandle that});
 
   CancelHandle crateApiProbeCancelHandleNew();
+
+  Future<DocumentCheck> crateApiDocumentCheckPdf(
+      {required String path, required CancelHandle cancel});
 
   String crateApiProbeCoreVersion();
 
@@ -187,11 +191,38 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<DocumentCheck> crateApiDocumentCheckPdf(
+      {required String path, required CancelHandle cancel}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        final serializer = SseSerializer(generalizedFrbRustBinding);
+        sse_encode_String(path, serializer);
+        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
+            cancel, serializer);
+        pdeCallFfi(generalizedFrbRustBinding, serializer,
+            funcId: 4, port: port_);
+      },
+      codec: SseCodec(
+        decodeSuccessData: sse_decode_document_check,
+        decodeErrorData: sse_decode_bridge_error,
+      ),
+      constMeta: kCrateApiDocumentCheckPdfConstMeta,
+      argValues: [path, cancel],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiDocumentCheckPdfConstMeta => const TaskConstMeta(
+        debugName: "check_pdf",
+        argNames: ["path", "cancel"],
+      );
+
+  @override
   String crateApiProbeCoreVersion() {
     return handler.executeSync(SyncTask(
       callFfi: () {
         final serializer = SseSerializer(generalizedFrbRustBinding);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 4)!;
+        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 5)!;
       },
       codec: SseCodec(
         decodeSuccessData: sse_decode_String,
@@ -221,7 +252,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
             cancel, serializer);
         pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 5, port: port_);
+            funcId: 6, port: port_);
       },
       codec: SseCodec(
         decodeSuccessData: sse_decode_u_32,
@@ -244,7 +275,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       callFfi: () {
         final serializer = SseSerializer(generalizedFrbRustBinding);
         sse_encode_String(id, serializer);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 6)!;
+        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
       },
       codec: SseCodec(
         decodeSuccessData: sse_decode_String,
@@ -306,6 +337,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RefusalReason dco_decode_box_autoadd_refusal_reason(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_refusal_reason(raw);
+  }
+
+  @protected
   BridgeError dco_decode_bridge_error(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -324,15 +361,51 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  DocumentCheck dco_decode_document_check(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return DocumentCheck(
+      refusal: dco_decode_opt_box_autoadd_refusal_reason(arr[0]),
+      notices: dco_decode_list_document_notice(arr[1]),
+    );
+  }
+
+  @protected
+  DocumentNotice dco_decode_document_notice(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return DocumentNotice.values[raw as int];
+  }
+
+  @protected
   int dco_decode_i_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
   }
 
   @protected
+  List<DocumentNotice> dco_decode_list_document_notice(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_document_notice).toList();
+  }
+
+  @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as Uint8List;
+  }
+
+  @protected
+  RefusalReason? dco_decode_opt_box_autoadd_refusal_reason(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_refusal_reason(raw);
+  }
+
+  @protected
+  RefusalReason dco_decode_refusal_reason(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return RefusalReason.values[raw as int];
   }
 
   @protected
@@ -400,6 +473,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RefusalReason sse_decode_box_autoadd_refusal_reason(
+      SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_refusal_reason(deserializer));
+  }
+
+  @protected
   BridgeError sse_decode_bridge_error(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     final var_kind = sse_decode_bridge_error_kind(deserializer);
@@ -415,9 +495,37 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  DocumentCheck sse_decode_document_check(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    final var_refusal = sse_decode_opt_box_autoadd_refusal_reason(deserializer);
+    final var_notices = sse_decode_list_document_notice(deserializer);
+    return DocumentCheck(refusal: var_refusal, notices: var_notices);
+  }
+
+  @protected
+  DocumentNotice sse_decode_document_notice(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    final inner = sse_decode_i_32(deserializer);
+    return DocumentNotice.values[inner];
+  }
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getInt32();
+  }
+
+  @protected
+  List<DocumentNotice> sse_decode_list_document_notice(
+      SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    final len_ = sse_decode_i_32(deserializer);
+    final ans_ = <DocumentNotice>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_document_notice(deserializer));
+    }
+    return ans_;
   }
 
   @protected
@@ -425,6 +533,25 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     final len_ = sse_decode_i_32(deserializer);
     return deserializer.buffer.getUint8List(len_);
+  }
+
+  @protected
+  RefusalReason? sse_decode_opt_box_autoadd_refusal_reason(
+      SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_refusal_reason(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  RefusalReason sse_decode_refusal_reason(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    final inner = sse_decode_i_32(deserializer);
+    return RefusalReason.values[inner];
   }
 
   @protected
@@ -493,6 +620,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_refusal_reason(
+      RefusalReason self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_refusal_reason(self, serializer);
+  }
+
+  @protected
   void sse_encode_bridge_error(BridgeError self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_bridge_error_kind(self.kind, serializer);
@@ -507,9 +641,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_document_check(DocumentCheck self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_opt_box_autoadd_refusal_reason(self.refusal, serializer);
+    sse_encode_list_document_notice(self.notices, serializer);
+  }
+
+  @protected
+  void sse_encode_document_notice(
+      DocumentNotice self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putInt32(self);
+  }
+
+  @protected
+  void sse_encode_list_document_notice(
+      List<DocumentNotice> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_document_notice(item, serializer);
+    }
   }
 
   @protected
@@ -518,6 +676,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     serializer.buffer.putUint8List(self);
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_refusal_reason(
+      RefusalReason? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_refusal_reason(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_refusal_reason(RefusalReason self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
   }
 
   @protected

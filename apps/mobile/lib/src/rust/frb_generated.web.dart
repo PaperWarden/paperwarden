@@ -6,6 +6,7 @@
 // Static analysis wrongly picks the IO variant, thus ignore this
 // ignore_for_file: argument_type_not_assignable
 
+import 'api/document.dart';
 import 'api/probe.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -46,16 +47,34 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool dco_decode_bool(dynamic raw);
 
   @protected
+  RefusalReason dco_decode_box_autoadd_refusal_reason(dynamic raw);
+
+  @protected
   BridgeError dco_decode_bridge_error(dynamic raw);
 
   @protected
   BridgeErrorKind dco_decode_bridge_error_kind(dynamic raw);
 
   @protected
+  DocumentCheck dco_decode_document_check(dynamic raw);
+
+  @protected
+  DocumentNotice dco_decode_document_notice(dynamic raw);
+
+  @protected
   int dco_decode_i_32(dynamic raw);
 
   @protected
+  List<DocumentNotice> dco_decode_list_document_notice(dynamic raw);
+
+  @protected
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
+
+  @protected
+  RefusalReason? dco_decode_opt_box_autoadd_refusal_reason(dynamic raw);
+
+  @protected
+  RefusalReason dco_decode_refusal_reason(dynamic raw);
 
   @protected
   int dco_decode_u_32(dynamic raw);
@@ -91,16 +110,37 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool sse_decode_bool(SseDeserializer deserializer);
 
   @protected
+  RefusalReason sse_decode_box_autoadd_refusal_reason(
+      SseDeserializer deserializer);
+
+  @protected
   BridgeError sse_decode_bridge_error(SseDeserializer deserializer);
 
   @protected
   BridgeErrorKind sse_decode_bridge_error_kind(SseDeserializer deserializer);
 
   @protected
+  DocumentCheck sse_decode_document_check(SseDeserializer deserializer);
+
+  @protected
+  DocumentNotice sse_decode_document_notice(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer);
 
   @protected
+  List<DocumentNotice> sse_decode_list_document_notice(
+      SseDeserializer deserializer);
+
+  @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
+
+  @protected
+  RefusalReason? sse_decode_opt_box_autoadd_refusal_reason(
+      SseDeserializer deserializer);
+
+  @protected
+  RefusalReason sse_decode_refusal_reason(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_32(SseDeserializer deserializer);
@@ -136,6 +176,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_bool(bool self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_refusal_reason(
+      RefusalReason self, SseSerializer serializer);
+
+  @protected
   void sse_encode_bridge_error(BridgeError self, SseSerializer serializer);
 
   @protected
@@ -143,11 +187,29 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       BridgeErrorKind self, SseSerializer serializer);
 
   @protected
+  void sse_encode_document_check(DocumentCheck self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_document_notice(
+      DocumentNotice self, SseSerializer serializer);
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_document_notice(
+      List<DocumentNotice> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_prim_u_8_strict(
       Uint8List self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_refusal_reason(
+      RefusalReason? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_refusal_reason(RefusalReason self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_32(int self, SseSerializer serializer);

@@ -2,4 +2,5 @@
 //! generates bindings for everything public under this module, so keep it
 //! narrow (`ARCHITECTURE.md`: "Narrow, generated Flutter-to-Rust contract").
 
+pub mod document;
 pub mod probe;
