@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [job_id, archive_entry_path, magic_bytes, job_pipeline, store_search]
+        target: [job_id, archive_entry_path, magic_bytes, job_pipeline, store_search, pdf_scan]
     # cargo-fuzz needs a Cargo project in the working directory; the fuzz
     # crate lives outside the core workspace, so point at it explicitly.
     defaults:

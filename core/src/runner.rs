@@ -53,6 +53,8 @@ pub enum JobError {
     InputRejected(&'static str),
     /// The engine could not process the input.
     EngineFailed(&'static str),
+    /// The input exceeds one of the engine's resource bounds.
+    LimitExceeded(&'static str),
     /// The engine panicked; treated as a failed job (`THREAT_MODEL.md`).
     EnginePanicked,
     /// The output is larger than the job allows.
@@ -85,6 +87,7 @@ impl fmt::Display for JobError {
             }
             Self::InputRejected(reason)
             | Self::EngineFailed(reason)
+            | Self::LimitExceeded(reason)
             | Self::OutputRejected(reason) => formatter.write_str(reason),
             Self::EnginePanicked => formatter.write_str("processing failed unexpectedly"),
             Self::OutputTooLarge { limit } => {
@@ -368,6 +371,7 @@ fn engine_error(error: EngineError, max_output: u64) -> JobError {
         EngineError::OutputLimit => JobError::OutputTooLarge { limit: max_output },
         EngineError::Io(kind) => JobError::Io(kind),
         EngineError::Failed(reason) => JobError::EngineFailed(reason),
+        EngineError::LimitExceeded(reason) => JobError::LimitExceeded(reason),
     }
 }
 

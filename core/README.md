@@ -20,6 +20,11 @@ PDFium, loaded at run time from a library fetched by `scripts/fetch_pdfium.py`
 (ADR-0007). Its PDFium tests are ignored unless
 `PAPERWARDEN_PDFIUM_LIB` names that library.
 
+`core/crates/pdf-scan` (`paperwarden-pdf-scan`) is the PDF pre-check that runs
+before PDFium opens any document: bounded decoding of every stream, structure
+bounds, damage detection and active-content flags, in pure Rust with no
+`unsafe` (ADR-0007, `docs/security/pdf-precheck.md`).
+
 `core/crates/bridge` (`paperwarden_bridge`) is the Flutter-Rust bridge
 (ADR-0005). Its hand-written API lives in `src/api`; `src/frb_generated.rs`
 is generated. It defines its own lint table because generated FFI glue needs

@@ -395,6 +395,30 @@ fn engine_error_fails_the_job() {
 }
 
 #[test]
+fn engine_limit_is_a_typed_limit_error() {
+    let fixture = Fixture::new("engine-limit");
+    let processor = FnProcessor(|context: &mut ProcessContext<'_>| {
+        context.create_output()?.write_all(b"partial")?;
+        Err(EngineError::LimitExceeded(
+            "an image in the PDF is too large",
+        ))
+    });
+    let report = expect_stopped(run(
+        &fixture,
+        &fixture.runner(),
+        &processor,
+        &FnVerifier(accept),
+        &CancellationToken::new(),
+    ));
+    assert_eq!(
+        report.outcome,
+        Outcome::Stopped(JobError::LimitExceeded("an image in the PDF is too large"))
+    );
+    assert_eq!(report.state, JobState::Cleaned);
+    fixture.assert_clean();
+}
+
+#[test]
 fn processor_panic_fails_the_job_and_cleans_up() {
     let fixture = Fixture::new("panic");
     let processor = FnProcessor(|context: &mut ProcessContext<'_>| {

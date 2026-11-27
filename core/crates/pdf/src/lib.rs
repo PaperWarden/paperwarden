@@ -11,9 +11,17 @@
 //! [`MAX_RENDER_PIXELS`] caps, so a page's declared size can never decide how
 //! much memory a bitmap takes. [`RenderProcessor`] plugs PDFium into the job
 //! runner's engine seam.
+//!
+//! Before PDFium sees a document, [`RenderProcessor`] runs PaperWarden's own
+//! pre-check ([`precheck`], `paperwarden-pdf-scan`, ADR-0007). It stops what
+//! PDFium would otherwise decode unbounded, and records damage and active
+//! content for the user's warnings.
 
-use paperwarden_core::engine::{EngineError, OutputVerifier, ProcessContext, Processor};
+use paperwarden_core::engine::{
+    EngineError, Interruption, OutputVerifier, ProcessContext, Processor,
+};
 use paperwarden_core::validation::Rejection;
+use paperwarden_pdf_scan::{scan, Interrupted, Report, ScanError, ScanLimits};
 use pdfium_render::prelude::{PdfDocument, PdfRenderConfig, Pdfium};
 use std::cell::RefCell;
 use std::fmt;
@@ -237,6 +245,41 @@ pub struct RenderStats {
     pub render_time: Duration,
     /// Text of the first page, if it could be read.
     pub first_page_text: Option<String>,
+    /// What the pre-check found: damage and active content to warn about.
+    pub precheck: Option<Report>,
+    /// Time the pre-check took.
+    pub precheck_time: Duration,
+}
+
+/// Runs PaperWarden's pre-check over a whole PDF before PDFium opens it.
+///
+/// `checkpoint` is the job's cancellation and time check.
+///
+/// # Errors
+///
+/// [`EngineError::LimitExceeded`] when the document exceeds a bound,
+/// [`EngineError::Interrupted`] when `checkpoint` stops it, and
+/// [`EngineError::Failed`] for a document the pre-check refuses.
+pub fn precheck(
+    bytes: &[u8],
+    limits: &ScanLimits,
+    mut checkpoint: impl FnMut() -> Result<(), Interruption>,
+) -> Result<Report, EngineError> {
+    let mut interruption = None;
+    let result = scan(bytes, limits, &mut || {
+        checkpoint().map_err(|stopped| {
+            interruption = Some(stopped);
+            Interrupted
+        })
+    });
+    match result {
+        Ok(report) => Ok(report),
+        Err(ScanError::Limit(limit)) => Err(EngineError::LimitExceeded(limit.reason())),
+        Err(ScanError::Interrupted) => Err(EngineError::Interrupted(
+            interruption.unwrap_or(Interruption::Cancelled),
+        )),
+        Err(error) => Err(EngineError::Failed(error.reason())),
+    }
 }
 
 /// Renders every page of the staged PDF inside the render box, checking for
@@ -247,6 +290,7 @@ pub struct RenderProcessor<'e> {
     engine: &'e PdfEngine,
     max_width: u32,
     max_height: u32,
+    limits: ScanLimits,
     stats: RefCell<RenderStats>,
 }
 
@@ -257,8 +301,16 @@ impl<'e> RenderProcessor<'e> {
             engine,
             max_width,
             max_height,
+            limits: ScanLimits::default(),
             stats: RefCell::new(RenderStats::default()),
         }
+    }
+
+    /// Uses `limits` for the pre-check instead of the defaults.
+    #[must_use]
+    pub fn with_limits(mut self, limits: ScanLimits) -> Self {
+        self.limits = limits;
+        self
     }
 
     /// What the last run observed.
@@ -284,6 +336,14 @@ impl Processor for RenderProcessor<'_> {
         let mut bytes = Vec::new();
         std::fs::File::open(context.input_path())?.read_to_end(&mut bytes)?;
         context.checkpoint()?;
+
+        let started = Instant::now();
+        let report = precheck(&bytes, &self.limits, || context.checkpoint())?;
+        {
+            let mut stats = self.stats.borrow_mut();
+            stats.precheck_time = started.elapsed();
+            stats.precheck = Some(report);
+        }
 
         let started = Instant::now();
         let document = self
