@@ -55,6 +55,11 @@ impl CancelHandle {
     pub fn is_cancelled(&self) -> bool {
         self.token.is_cancelled()
     }
+
+    /// The core token behind this handle, for other bridge modules.
+    pub(crate) fn token(&self) -> &CancellationToken {
+        &self.token
+    }
 }
 
 /// Why a bridge call failed. Dart receives it as a thrown exception.
@@ -73,10 +78,12 @@ pub enum BridgeErrorKind {
     InvalidInput,
     /// The call stopped because its [`CancelHandle`] was cancelled.
     Cancelled,
+    /// A file could not be read.
+    Unreadable,
 }
 
 impl BridgeError {
-    fn invalid_input(message: impl Into<String>) -> Self {
+    pub(crate) fn invalid_input(message: impl Into<String>) -> Self {
         Self {
             kind: BridgeErrorKind::InvalidInput,
             message: message.into(),

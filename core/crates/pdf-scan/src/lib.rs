@@ -30,6 +30,7 @@ mod scan;
 mod syntax;
 mod xref;
 
+use paperwarden_core::{Inert, Notice};
 use std::fmt;
 
 /// Bounds for one document. The defaults are provisional; see each field.
@@ -154,6 +155,21 @@ pub enum ActiveContent {
 }
 
 impl ActiveContent {
+    /// The kind of content the user is told was not run.
+    pub fn inert(self) -> Inert {
+        match self {
+            Self::JavaScript => Inert::Scripts,
+            Self::Launch => Inert::LaunchActions,
+            Self::Uri => Inert::WebLinks,
+            Self::SubmitForm => Inert::FormSubmission,
+            Self::ImportData => Inert::DataImport,
+            Self::RemoteGoTo => Inert::OtherDocuments,
+            Self::EmbeddedFile => Inert::EmbeddedFiles,
+            Self::RichMedia => Inert::Media,
+            Self::Xfa => Inert::InteractiveForms,
+        }
+    }
+
     const ALL: [Self; 9] = [
         Self::JavaScript,
         Self::Launch,
@@ -222,6 +238,22 @@ impl Report {
     /// Whether the document needs the damaged-file warning.
     pub fn is_damaged(&self) -> bool {
         !self.damage.is_empty()
+    }
+
+    /// What the user must be told, as the job runner's notices: one
+    /// [`Notice::Repaired`] for any damage, and what content was not run.
+    pub fn notices(&self) -> Vec<Notice> {
+        let mut notices: Vec<Notice> = self
+            .active_content
+            .iter()
+            .map(|kind| Notice::NotRun(kind.inert()))
+            .collect();
+        if self.is_damaged() {
+            notices.push(Notice::Repaired);
+        }
+        notices.sort();
+        notices.dedup();
+        notices
     }
 }
 

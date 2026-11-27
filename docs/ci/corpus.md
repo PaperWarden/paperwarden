@@ -36,6 +36,11 @@ exactly these fields (`references` is optional); unknown fields fail the check.
 | `bound` | stops at a size, ratio, nesting, dimension or loop bound with a limit error, without exhausting memory, time or disk, and leaves no workspace. |
 | `reference` | not an input; ground truth for another fixture. |
 
+For `repair` and `neutralize`, the warning is the job's result data: a
+successful job's `JobReport::notices` holds `Notice::Repaired` for a recovered
+file and `Notice::NotRun(..)` for each kind of content that was not run. The
+interface turns those into words (`apps/mobile/lib/documents/document_copy.dart`).
+
 ### Limits
 
 At most 1 MiB per fixture and 8 MiB for the whole corpus. Bombs stay small on

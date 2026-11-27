@@ -33,6 +33,12 @@ void main() {
         }
       });
 
+      test('the warning color meets WCAG AA as text and icon', () {
+        for (final ground in [palette.background, palette.surface]) {
+          expect(contrast(palette.warning, ground), greaterThanOrEqualTo(_aa));
+        }
+      });
+
       test('text on the brand fill meets WCAG AA', () {
         expect(
           contrast(palette.onBrand, palette.brandFill),

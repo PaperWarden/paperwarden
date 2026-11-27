@@ -13,6 +13,7 @@
 
 use crate::validation::Rejection;
 use crate::CancellationToken;
+use crate::Notice;
 use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io::{self, Write};
@@ -128,6 +129,7 @@ pub struct ProcessContext<'a> {
     output: &'a Path,
     max_output_bytes: u64,
     guard: Guard<'a>,
+    notices: Vec<Notice>,
 }
 
 impl<'a> ProcessContext<'a> {
@@ -144,6 +146,7 @@ impl<'a> ProcessContext<'a> {
             output,
             max_output_bytes,
             guard,
+            notices: Vec::new(),
         }
     }
 
@@ -165,6 +168,19 @@ impl<'a> ProcessContext<'a> {
     /// Returns the [`Interruption`]; pass it on with `?`.
     pub fn checkpoint(&self) -> Result<(), Interruption> {
         self.guard.check()
+    }
+
+    /// Records something the user must be told about the document, such as
+    /// a repair or content that was not run. It travels with the job's result
+    /// if the job succeeds; each notice is kept once.
+    pub fn notice(&mut self, notice: Notice) {
+        if let Err(position) = self.notices.binary_search(&notice) {
+            self.notices.insert(position, notice);
+        }
+    }
+
+    pub(crate) fn into_notices(self) -> Vec<Notice> {
+        self.notices
     }
 
     /// Creates the job's single output file.

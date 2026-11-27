@@ -11,4 +11,5 @@ description = "PaperWarden's PDF pre-check: bounds every PDF before PDFium opens
 workspace = true
 
 [dependencies]
+paperwarden-core = { path = "../.." }
 miniz_oxide = { version = "0.9.1", default-features = false, features = ["with-alloc"] }

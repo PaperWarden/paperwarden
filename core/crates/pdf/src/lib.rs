@@ -339,6 +339,9 @@ impl Processor for RenderProcessor<'_> {
 
         let started = Instant::now();
         let report = precheck(&bytes, &self.limits, || context.checkpoint())?;
+        for notice in report.notices() {
+            context.notice(notice);
+        }
         {
             let mut stats = self.stats.borrow_mut();
             stats.precheck_time = started.elapsed();

@@ -14,6 +14,7 @@ class Palette extends ThemeExtension<Palette> {
     required this.text,
     required this.textSecondary,
     required this.accent,
+    required this.warning,
     required this.brandFill,
     required this.onBrand,
     required this.pdf,
@@ -31,6 +32,7 @@ class Palette extends ThemeExtension<Palette> {
     text: Color(0xFF111111),
     textSecondary: Color(0xFF6B6B6B),
     accent: Color(0xFFD0151F),
+    warning: Color(0xFF9A5B00),
     brandFill: Color(0xFFD0151F),
     onBrand: Color(0xFFFFFFFF),
     pdf: Color(0xFFD0151F),
@@ -50,6 +52,7 @@ class Palette extends ThemeExtension<Palette> {
     text: Color(0xFFF2F2F2),
     textSecondary: Color(0xFFA3A3A8),
     accent: Color(0xFFFF5A5F),
+    warning: Color(0xFFF0B23E),
     brandFill: Color(0xFFB3121A),
     onBrand: Color(0xFFFFFFFF),
     pdf: Color(0xFFB3121A),
@@ -79,6 +82,11 @@ class Palette extends ThemeExtension<Palette> {
   /// Brand red used as text or icon color on [background] or [surface].
   final Color accent;
 
+  /// Amber for warnings about a document, such as a repair or content that
+  /// was not run, used as icon, border or text color on [background] or
+  /// [surface].
+  final Color warning;
+
   /// Brand red used as a filled surface, as in the hero cards.
   final Color brandFill;
 
@@ -101,6 +109,7 @@ class Palette extends ThemeExtension<Palette> {
     Color? text,
     Color? textSecondary,
     Color? accent,
+    Color? warning,
     Color? brandFill,
     Color? onBrand,
     Color? pdf,
@@ -117,6 +126,7 @@ class Palette extends ThemeExtension<Palette> {
       text: text ?? this.text,
       textSecondary: textSecondary ?? this.textSecondary,
       accent: accent ?? this.accent,
+      warning: warning ?? this.warning,
       brandFill: brandFill ?? this.brandFill,
       onBrand: onBrand ?? this.onBrand,
       pdf: pdf ?? this.pdf,
@@ -141,6 +151,7 @@ class Palette extends ThemeExtension<Palette> {
       text: mix(text, other.text),
       textSecondary: mix(textSecondary, other.textSecondary),
       accent: mix(accent, other.accent),
+      warning: mix(warning, other.warning),
       brandFill: mix(brandFill, other.brandFill),
       onBrand: mix(onBrand, other.onBrand),
       pdf: mix(pdf, other.pdf),

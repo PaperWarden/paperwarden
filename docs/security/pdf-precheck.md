@@ -60,7 +60,9 @@ job runner has staged and size-checked the input and before `PdfEngine::open`.
      SubmitForm, ImportData, remote go-to actions, embedded files, rich media
      and XFA.
 
-   `RenderStats::precheck` carries both for the warnings (#61).
+   `RenderStats::precheck` carries both. The processor also records them as
+   the job's notices (`Notice::Repaired`, `Notice::NotRun(..)`), which reach
+   the app as typed values through the bridge's `checkPdf` (#61).
 6. **Stops cooperatively.** The job's checkpoint runs every 256 objects, for
    every stream and every MiB decoded, so cancellation and the time limit
    apply.

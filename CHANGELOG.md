@@ -65,3 +65,9 @@ All notable changes will be documented here after the first release baseline.
   inside object streams. Every corpus PDF now meets its outcome at the engine
   level. Resource bounds now stop a job with a typed `LimitExceeded` error, and
   a `pdf_scan` fuzz target was added.
+- Added document warnings (#61). A successful job now carries typed notices:
+  a repaired file, and each kind of content that was not run. A bridge call,
+  `checkPdf`, returns those notices, or a typed reason for refusing the file.
+  The app has a `DocumentNotices` and a `DocumentRefusal` widget that put them
+  into plain words. Each is read by screen readers as one announced block, and
+  a new amber warning color meets WCAG AA in both themes.

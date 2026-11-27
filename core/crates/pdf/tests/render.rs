@@ -15,7 +15,7 @@
 use paperwarden_core::engine::{EngineError, Interruption};
 use paperwarden_core::validation::MagicBytes;
 use paperwarden_core::{
-    CancellationToken, JobError, JobId, JobLimits, JobRunner, Operation, Outcome,
+    CancellationToken, Inert, JobError, JobId, JobLimits, JobRunner, Notice, Operation, Outcome,
 };
 use paperwarden_pdf::{
     precheck, PdfEngine, PdfError, PpmVerifier, RenderProcessor, MAX_RENDER_PIXELS,
@@ -241,9 +241,28 @@ fn renders_through_the_isolated_job_runner() {
             &CancellationToken::new(),
         )
         .expect("repairable PDF renders");
+    assert_eq!(ready.notices(), [Notice::Repaired]);
     let _ = ready.finish();
     let damage = processor.stats().precheck.expect("pre-check ran").damage;
     assert_eq!(damage, vec![Damage::CrossReference]);
+
+    // Active content renders inert, and the user is told what was not run.
+    std::fs::write(&input, corpus("security/pdf/launch-and-uri-actions.pdf")).expect("write input");
+    let ready = runner
+        .run(
+            JobId::new("pdf-5").expect("id"),
+            &input,
+            &operation,
+            &CancellationToken::new(),
+        )
+        .expect("PDF with actions renders");
+    assert_eq!(
+        ready.finish().notices,
+        [
+            Notice::NotRun(Inert::LaunchActions),
+            Notice::NotRun(Inert::WebLinks)
+        ]
+    );
     assert_eq!(
         std::fs::read_dir(root.join("jobs")).expect("jobs").count(),
         0,

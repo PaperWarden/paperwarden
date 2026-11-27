@@ -180,3 +180,33 @@ fn the_large_image_is_bounded_by_its_dimensions() {
         report.decoded_bytes
     );
 }
+
+#[test]
+fn findings_become_the_job_runner_notices() {
+    use paperwarden_core::{Inert, Notice};
+    let cases: [(&str, &[Notice]); 7] = [
+        ("valid/pdf/one-page.pdf", &[]),
+        ("malformed/pdf/bad-xref-offsets.pdf", &[Notice::Repaired]),
+        ("malformed/pdf/no-eof-marker.pdf", &[Notice::Repaired]),
+        ("security/pdf/xref-prev-loop.pdf", &[Notice::Repaired]),
+        (
+            "security/pdf/stream-length-overflow.pdf",
+            &[Notice::Repaired],
+        ),
+        (
+            "security/pdf/javascript-openaction.pdf",
+            &[Notice::NotRun(Inert::Scripts)],
+        ),
+        (
+            "security/pdf/launch-and-uri-actions.pdf",
+            &[
+                Notice::NotRun(Inert::LaunchActions),
+                Notice::NotRun(Inert::WebLinks),
+            ],
+        ),
+    ];
+    for (fixture, expected) in cases {
+        let report = run(fixture).unwrap_or_else(|error| panic!("{fixture}: {error:?}"));
+        assert_eq!(report.notices(), expected, "{fixture}");
+    }
+}

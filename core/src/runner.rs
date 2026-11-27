@@ -12,7 +12,7 @@ use crate::export;
 use crate::limits::JobLimits;
 use crate::validation::{InputValidator, StagedInput, HEADER_LEN};
 use crate::workspace::{RecoveryReport, Workspace};
-use crate::{CancellationToken, Job, JobId, JobState};
+use crate::{CancellationToken, Job, JobId, JobState, Notice};
 use std::fmt;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Write};
@@ -142,6 +142,9 @@ pub struct JobReport {
     pub state: JobState,
     /// Why cleanup failed, if it did.
     pub cleanup_error: Option<io::ErrorKind>,
+    /// What the user must be told about the document, sorted, each once.
+    /// Empty unless the job produced a result.
+    pub notices: Vec<Notice>,
 }
 
 /// Starts jobs in workspaces under one root.
@@ -199,10 +202,11 @@ impl JobRunner {
         active.job.workspace = active.workspace.path().to_path_buf();
 
         match self.drive(&mut active, input, operation, &guard) {
-            Ok(output_len) => Ok(ReadyJob {
+            Ok((output_len, notices)) => Ok(ReadyJob {
                 active,
                 output_len,
                 cancel: cancel.clone(),
+                notices,
             }),
             Err(error) => Err(active.stop(error)),
         }
@@ -214,7 +218,7 @@ impl JobRunner {
         input: &Path,
         operation: &Operation<'_>,
         guard: &Guard<'_>,
-    ) -> Result<u64, JobError> {
+    ) -> Result<(u64, Vec<Notice>), JobError> {
         let staged = active.workspace.input_dir().join(STAGED_INPUT);
         let (header, input_len) = stage(input, &staged, self.limits.max_input_bytes(), guard)?;
         operation
@@ -234,6 +238,7 @@ impl JobRunner {
             Err(_) => return Err(JobError::EnginePanicked),
             Ok(result) => result.map_err(|error| engine_error(error, max_output))?,
         }
+        let notices = context.into_notices();
 
         guard.check()?;
         active.transition(JobState::Verifying)?;
@@ -247,7 +252,7 @@ impl JobRunner {
 
         guard.check()?;
         active.transition(JobState::ReadyToExport)?;
-        Ok(output_len)
+        Ok((output_len, notices))
     }
 }
 
@@ -260,6 +265,7 @@ pub struct ReadyJob {
     active: ActiveJob,
     output_len: u64,
     cancel: CancellationToken,
+    notices: Vec<Notice>,
 }
 
 impl ReadyJob {
@@ -298,13 +304,20 @@ impl ReadyJob {
 
     /// Removes the workspace and reports how the job ended.
     pub fn finish(mut self) -> JobReport {
-        if self.active.job.state == JobState::Exported {
+        let mut report = if self.active.job.state == JobState::Exported {
             self.active.finish(Outcome::Exported)
         } else {
             // A verified result the user chose not to keep.
             let _ = self.active.transition(JobState::Cancelled);
             self.active.finish(Outcome::Discarded)
-        }
+        };
+        report.notices = std::mem::take(&mut self.notices);
+        report
+    }
+
+    /// What the user must be told about the document, sorted, each once.
+    pub fn notices(&self) -> &[Notice] {
+        &self.notices
     }
 }
 
@@ -345,6 +358,7 @@ impl ActiveJob {
             outcome,
             state: self.job.state,
             cleanup_error,
+            notices: Vec::new(),
         }
     }
 }
@@ -362,6 +376,7 @@ fn stop_without_workspace(mut job: Job, error: JobError) -> JobReport {
         outcome: Outcome::Stopped(error),
         state: job.state,
         cleanup_error: None,
+        notices: Vec::new(),
     }
 }
 
