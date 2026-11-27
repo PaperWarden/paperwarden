@@ -17,7 +17,7 @@ from source (ADR-0006, Proposed).
 
 `core/crates/pdf` (`paperwarden-pdf`) renders PDF pages and extracts text with
 PDFium, loaded at run time from a library fetched by `scripts/fetch_pdfium.py`
-(ADR-0007, Proposed). Its PDFium tests are ignored unless
+(ADR-0007). Its PDFium tests are ignored unless
 `PAPERWARDEN_PDFIUM_LIB` names that library.
 
 `core/crates/bridge` (`paperwarden_bridge`) is the Flutter-Rust bridge

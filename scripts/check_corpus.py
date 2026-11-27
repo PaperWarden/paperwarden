@@ -41,6 +41,7 @@ OUTCOMES = {
     "accept": "Open or process it and produce what `expected` describes",
     "reject": "Refuse it as invalid, produce no output and clean up",
     "neutralize": "Never perform the dangerous effect (execute, fetch, escape, overwrite); flag it",
+    "repair": "Recover it without trusting the damaged structure, warn that it was repaired, else reject",
     "bound": "Stop at a resource or nesting bound before exhausting the device",
     "reference": "Ground truth for another fixture, not an input",
 }

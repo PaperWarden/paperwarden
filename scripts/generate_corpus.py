@@ -207,10 +207,11 @@ def pdf_fixtures() -> list[Fixture]:
                 "Accept; the newest revision's text 'PaperWarden corpus, revised' wins"),
         Fixture("malformed/pdf/bad-xref-offsets.pdf", bytes(bad_xref),
                 "Cross-reference table whose catalog offset points past the end of the file",
-                "Reject, or repair without trusting the bad offset; never read out of bounds"),
+                "Repair: rebuild the cross-reference table without trusting the bad offset and open with a "
+                "damaged-file warning; never read out of bounds"),
         Fixture("malformed/pdf/no-eof-marker.pdf", no_eof,
                 "PDF missing its final %%EOF marker",
-                "Reject or repair deterministically; never hang searching for the trailer"),
+                "Repair deterministically and open with a damaged-file warning; never hang searching for the trailer"),
         Fixture("malformed/pdf/header-only.pdf", b"%PDF-1.7\n",
                 "PDF signature with no body",
                 "Reject as malformed; a matching signature alone is not a valid PDF"),
@@ -222,7 +223,8 @@ def pdf_fixtures() -> list[Fixture]:
                 "Never launch or fetch anything; flag both actions (PRODUCT_INVARIANTS.md 6 and 7)"),
         Fixture("security/pdf/xref-prev-loop.pdf", prev_loop,
                 "Trailer whose /Prev points back at its own cross-reference section",
-                "Detect the cycle and stop; never loop forever"),
+                "Detect the cycle and stop following it, then repair and open with a damaged-file warning; "
+                "never loop forever"),
         Fixture("security/pdf/deep-nesting.pdf", nesting,
                 "Array nested 20,000 levels deep",
                 "Reject or stop at a nesting bound; never exhaust the stack"),
@@ -234,7 +236,8 @@ def pdf_fixtures() -> list[Fixture]:
                 "Render within the pixel bound or refuse the page; never allocate a bitmap from the page size alone"),
         Fixture("security/pdf/stream-length-overflow.pdf", length_overflow,
                 "Stream whose /Length claims 999,999,999 bytes in a small file",
-                "Never trust /Length for allocation or reads past the end of the file"),
+                "Repair: never trust /Length for allocation or reads past the end of the file; open with a "
+                "damaged-file warning"),
     ]
 
 
@@ -707,8 +710,8 @@ OCR_TRUTH = "ocr/printed-line.txt"
 
 # What each fixture claims, checked independently by scripts/corpus_facts.py.
 # Security fixtures also state their outcome; other categories default to
-# accept (valid, conversion inputs, OCR images), reject (malformed) or
-# reference (ground-truth files).
+# accept (valid, conversion inputs, OCR images), reject (malformed, unless a
+# recoverable one declares repair) or reference (ground-truth files).
 DECLARED: dict[str, dict] = {
     # Originals
     "valid/minimal.txt": {"facts": {"utf8": True}},
@@ -725,17 +728,20 @@ DECLARED: dict[str, dict] = {
     "valid/pdf/many-pages-200.pdf": {"facts": {"pdf_xref_valid": True, "contains": ["/Count 200", "(Page 200) Tj"]}},
     "valid/pdf/large-image.pdf": {"facts": {
         "pdf_xref_valid": True, "max_inflated_bytes": 48_000_000, "contains": ["/Width 4000 /Height 4000"]}},
-    "malformed/pdf/bad-xref-offsets.pdf": {"facts": {"pdf_xref_valid": False}},
-    "malformed/pdf/no-eof-marker.pdf": {"facts": {"absent": ["%%EOF"], "contains": ["startxref"]}},
+    # Recoverable damage opens with a warning once it passes the security checks
+    # (maintainer decision, 2026-11-27; investigation in PW-010).
+    "malformed/pdf/bad-xref-offsets.pdf": {"outcome": "repair", "facts": {"pdf_xref_valid": False}},
+    "malformed/pdf/no-eof-marker.pdf": {"outcome": "repair", "facts": {
+        "absent": ["%%EOF"], "contains": ["startxref"]}},
     "malformed/pdf/header-only.pdf": {"facts": {"pdf_xref_valid": False, "absent": ["obj"]}},
     "security/pdf/javascript-openaction.pdf": {"outcome": "neutralize", "facts": {
         "pdf_xref_valid": True, "contains": ["/OpenAction", "/S /JavaScript"]}},
     "security/pdf/launch-and-uri-actions.pdf": {"outcome": "neutralize", "facts": {
         "pdf_xref_valid": True, "contains": ["/S /Launch", "/S /URI", REMOTE]}},
-    "security/pdf/xref-prev-loop.pdf": {"outcome": "bound", "facts": {"pdf_prev_loop": True}},
+    "security/pdf/xref-prev-loop.pdf": {"outcome": "repair", "facts": {"pdf_prev_loop": True}},
     "security/pdf/deep-nesting.pdf": {"outcome": "bound", "facts": {"max_bracket_depth": 20000}},
     "security/pdf/flate-bomb.pdf": {"outcome": "bound", "facts": {"max_inflated_bytes": 16 * MIB}},
-    "security/pdf/stream-length-overflow.pdf": {"outcome": "reject", "facts": {"contains": ["/Length 999999999"]}},
+    "security/pdf/stream-length-overflow.pdf": {"outcome": "repair", "facts": {"contains": ["/Length 999999999"]}},
     "security/pdf/extreme-page-size.pdf": {"outcome": "bound", "facts": {
         "pdf_xref_valid": True, "contains": ["/MediaBox [0 0 1 14400]", "/MediaBox [0 0 1000000 1000000]"]}},
     # Office
@@ -834,7 +840,7 @@ def manifest_entry(path: str, data: bytes, provenance: str, purpose: str, expect
     elif category == "security":
         outcome = declared.get("outcome") or sys.exit(f"{path}: security fixtures declare an outcome")
     else:
-        outcome = {"malformed": "reject"}.get(category, "accept")
+        outcome = declared.get("outcome") or {"malformed": "reject"}.get(category, "accept")
     if outcome == "reference":
         requires: list[str] = []
     elif category == "ocr":

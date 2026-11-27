@@ -32,6 +32,7 @@ exactly these fields (`references` is optional); unknown fields fail the check.
 | `accept` | opens or processes it and produces what `expected` describes. |
 | `reject` | refuses it as invalid, produces no output and leaves no workspace. |
 | `neutralize` | never performs the dangerous effect (executing, fetching, escaping the workspace, overwriting) and flags it; it may still show safe content. |
+| `repair` | recovers it without trusting the damaged structure, passes the same security checks as any input, opens it and warns that the file was damaged. If recovery fails or a check fails, it rejects instead. |
 | `bound` | stops at a size, ratio, nesting, dimension or loop bound with a limit error, without exhausting memory, time or disk, and leaves no workspace. |
 | `reference` | not an input; ground truth for another fixture. |
 
