@@ -45,6 +45,14 @@ jobs:
             fi
           done < <(find ios -name '*.entitlements' -type f)
       - run: flutter build ios --simulator --no-codesign
+      # Apple requires reasons for required-reason APIs (PW-041): the built
+      # app must carry the manifest, and it must declare every category its
+      # binaries use.
+      - name: The privacy manifest covers the built app
+        run: |
+          python3 -m unittest discover -s ../../tests/scripts -p test_check_privacy_manifest.py -v
+          plutil -lint ios/Runner/PrivacyInfo.xcprivacy
+          python3 ../../scripts/check_privacy_manifest.py --app build/ios/iphonesimulator/Runner.app
       - name: App links the Rust bridge
         run: |
           if ! grep -rlq frbgen_paperwarden_ build/ios/iphonesimulator/Runner.app; then
@@ -106,6 +114,8 @@ jobs:
               echo "The app targets iOS $target, below PDFium's minimum $minos" >&2; exit 1
             fi
           done
+          # The app's privacy manifest must cover PDFium's required-reason APIs.
+          python3 ../scripts/check_privacy_manifest.py --binary "$framework/pdfium"
           # PDFium must not import any network API (PRODUCT_INVARIANTS.md 1).
           nm -u "$framework/pdfium" | sed 's/^ *U //' > "$EVIDENCE/ios-imports.txt"
           if grep -E '^_(socket|connect|getaddrinfo|gethostbyname|CFSocket|CFStream|CFHTTP|nw_|SCNetwork)' "$EVIDENCE/ios-imports.txt"; then
