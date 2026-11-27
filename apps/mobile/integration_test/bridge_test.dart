@@ -1,12 +1,15 @@
 // Runs on a device or emulator against the real Rust library:
 //   flutter test integration_test -d <device>
 // Proves the bridge feasibility criteria from #12: sync and async calls,
-// cancellation and typed errors.
+// cancellation and typed errors; and the document check from #61.
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:paperwarden/src/rust/api/document.dart';
 import 'package:paperwarden/src/rust/api/probe.dart';
 import 'package:paperwarden/src/rust/frb_generated.dart';
 
@@ -67,5 +70,49 @@ void main() {
       () => validateJobId(id: '../escape'),
       throwsA(_bridgeError(BridgeErrorKind.invalidInput)),
     );
+  });
+
+  group('document check', () {
+    late Directory dir;
+    setUpAll(() async {
+      dir = await Directory.systemTemp.createTemp('pw-check');
+    });
+    tearDownAll(() => dir.delete(recursive: true));
+
+    Future<String> write(String name, String content) async {
+      final file = File('${dir.path}/$name');
+      await file.writeAsBytes(latin1.encode(content));
+      return file.path;
+    }
+
+    test('a damaged PDF with a script opens with typed notices', () async {
+      // No cross-reference table or %%EOF, and JavaScript on open.
+      final path = await write(
+        'script.pdf',
+        '%PDF-1.7\n1 0 obj\n<< /Type /Catalog /OpenAction '
+            '<< /S /JavaScript /JS (app.alert(1)) >> >>\nendobj\n',
+      );
+
+      final check = await checkPdf(path: path, cancel: CancelHandle());
+
+      expect(check.refusal, isNull);
+      expect(check.notices, [DocumentNotice.repaired, DocumentNotice.scripts]);
+    });
+
+    test('a file that is not a PDF is refused with a typed reason', () async {
+      final path = await write('invoice.pdf', 'MZ not a pdf at all');
+
+      final check = await checkPdf(path: path, cancel: CancelHandle());
+
+      expect(check.refusal, RefusalReason.notPdf);
+      expect(check.notices, isEmpty);
+    });
+
+    test('a missing file is a typed error', () async {
+      await expectLater(
+        checkPdf(path: '${dir.path}/missing.pdf', cancel: CancelHandle()),
+        throwsA(_bridgeError(BridgeErrorKind.unreadable)),
+      );
+    });
   });
 }

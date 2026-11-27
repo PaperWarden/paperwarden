@@ -156,6 +156,7 @@ name = "paperwarden-pdf-scan"
 version = "0.0.1"
 dependencies = [
  "miniz_oxide",
+ "paperwarden-core",
 ]
 
 [[package]]
