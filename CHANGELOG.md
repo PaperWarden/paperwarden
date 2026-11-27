@@ -71,3 +71,10 @@ All notable changes will be documented here after the first release baseline.
   The app has a `DocumentNotices` and a `DocumentRefusal` widget that put them
   into plain words. Each is read by screen readers as one announced block, and
   a new amber warning color meets WCAG AA in both themes.
+- Added the job history controls (#63). Settings can turn history off, keep
+  it without file names (which also removes saved names from the database
+  files) or clear it, and the Rust store enforces each choice. The app now
+  opens its database through the bridge (`AppStore`) in app-private storage,
+  given by thin Kotlin and Swift adapters. On iOS that directory is excluded
+  from backup and encrypted while locked unless open. `PRIVACY.md` describes
+  the controls.

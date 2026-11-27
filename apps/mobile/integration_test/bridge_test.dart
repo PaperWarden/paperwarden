@@ -1,7 +1,8 @@
 // Runs on a device or emulator against the real Rust library:
 //   flutter test integration_test -d <device>
 // Proves the bridge feasibility criteria from #12: sync and async calls,
-// cancellation and typed errors; and the document check from #61.
+// cancellation and typed errors; the document check from #61; and the
+// local database through the platform storage adapter (#63).
 
 import 'dart:async';
 import 'dart:convert';
@@ -9,6 +10,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:paperwarden/history/history.dart';
 import 'package:paperwarden/src/rust/api/document.dart';
 import 'package:paperwarden/src/rust/api/probe.dart';
 import 'package:paperwarden/src/rust/frb_generated.dart';
@@ -71,6 +73,39 @@ void main() {
       throwsA(_bridgeError(BridgeErrorKind.invalidInput)),
     );
   });
+
+  test(
+    'the database opens in private storage and keeps history controls',
+    () async {
+      final directory = await storageChannel.invokeMethod<String>(
+        'databaseDirectory',
+      );
+      expect(directory, isNotNull);
+      // App-private: inside the app's own sandbox, never shared storage.
+      expect(
+        directory,
+        Platform.isIOS
+            ? contains('Library/Application Support/PaperWarden')
+            : contains('dev.paperwarden.paperwarden'),
+      );
+
+      final history = StoreHistoryRepository(await openAppStore());
+      await history.setEnabled(false);
+      await history.setFileNames(false);
+      final reopened = StoreHistoryRepository(await openAppStore());
+      expect(
+        await reopened.load(),
+        const HistoryState(enabled: false, fileNames: false, count: 0),
+      );
+      await reopened.setEnabled(true);
+      await reopened.setFileNames(true);
+      await reopened.clear();
+      expect(
+        await reopened.load(),
+        const HistoryState(enabled: true, fileNames: true, count: 0),
+      );
+    },
+  );
 
   group('document check', () {
     late Directory dir;

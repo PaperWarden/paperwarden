@@ -52,15 +52,17 @@ system's storage encryption, under these assumptions:
   encryption, and app-private storage is credential-encrypted: unreadable
   until the user first unlocks the device after boot.
 - **iOS.** Data Protection encrypts every file. The default class makes files
-  available after first unlock; because PaperWarden does no background work,
-  the database directory should use `NSFileProtectionComplete` so it is also
-  unreadable while the device is locked. To be set when the iOS adapter
-  creates the directory.
+  available after first unlock. The iOS adapter (`AppDelegate.swift`, #63)
+  creates the database directory with
+  `NSFileProtectionCompleteUnlessOpen`. Files that are not open are unreadable
+  while the device is locked, and the open database keeps working if the
+  device locks while the app is in the background. `NSFileProtectionComplete`,
+  first proposed here, would make SQLite's open files fail at lock.
 - **Backups.** App data must not leave the device. This change sets
   `android:allowBackup="false"` and excludes every domain from cloud backup
   and device-to-device transfer; on the emulator the installed app no longer
-  carries the `ALLOW_BACKUP` flag. On iOS the database directory must be
-  marked `isExcludedFromBackup` when the adapter creates it.
+  carries the `ALLOW_BACKUP` flag. On iOS the adapter marks the database
+  directory `isExcludedFromBackup` (#63).
 - **What this protects against.** A lost or stolen device that is powered off
   or locked.
 - **What it does not.** An unlocked device in someone else's hands, a rooted or
@@ -115,11 +117,10 @@ packages.
 
 ## Follow-ups
 
-- Expose the store through the bridge and create it from the platform
-  adapters: app-private path, iOS `NSFileProtectionComplete` and
-  `isExcludedFromBackup`.
-- Job history keeps display names, with user controls to turn history off,
-  hide file names and clear it (decided 2026-11-27, ADR-0006). The store
-  already clears without residue; the switches are still to be built.
+- Done in #63: the store is opened through the bridge (`AppStore`) at a path
+  the platform adapters give, in app-private storage, excluded from iOS
+  backup. Job history keeps display names, and Settings can turn history
+  off, hide file names (removing saved ones) and clear it. The core enforces
+  all three.
 - Manual export and import of settings and workflows (ADR-0006).
 - Measure linked size and search latency in the app with a realistic index.
