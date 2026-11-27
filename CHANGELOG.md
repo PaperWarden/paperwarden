@@ -71,3 +71,9 @@ All notable changes will be documented here after the first release baseline.
   The app has a `DocumentNotices` and a `DocumentRefusal` widget that put them
   into plain words. Each is read by screen readers as one announced block, and
   a new amber warning color meets WCAG AA in both themes.
+- The PDF pre-check now measures encrypted PDFs that open without a password
+  (#67). It decrypts them in memory with the standard security handler (RC4,
+  AES-128 or AES-256, revisions 2 to 6), checking the password first, and
+  applies the same bounds and checks. PDFs that need a password are refused
+  with their own reason. Six encrypted corpus fixtures, made with pypdf,
+  cover each kind, an encrypted bomb and encrypted JavaScript.

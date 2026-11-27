@@ -90,8 +90,11 @@ enum RefusalReason {
   /// The PDF has no content to show.
   noContent,
 
-  /// The PDF is encrypted, which is not supported yet.
+  /// The PDF uses a kind of encryption PaperWarden cannot open.
   encrypted,
+
+  /// The PDF needs a password, which PaperWarden does not ask for yet.
+  passwordRequired,
 
   /// The file is larger than PaperWarden opens.
   tooLarge,

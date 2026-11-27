@@ -80,6 +80,22 @@ const EXPECTED: &[(&str, Expect)] = &[
         Expect::Stopped(ScanError::Limit(Limit::CompressionRatio)),
     ),
     ("security/pdf/extreme-page-size.pdf", Expect::RendererBound),
+    // Encrypted with pypdf (PW-042): measured after decryption.
+    ("valid/pdf/encrypted-rc4-128.pdf", Expect::Clean),
+    ("valid/pdf/encrypted-aes-128.pdf", Expect::Clean),
+    ("valid/pdf/encrypted-aes-256.pdf", Expect::Clean),
+    (
+        "security/pdf/encrypted-flate-bomb.pdf",
+        Expect::Stopped(ScanError::Limit(Limit::CompressionRatio)),
+    ),
+    (
+        "security/pdf/encrypted-javascript.pdf",
+        Expect::Active(&[ActiveContent::JavaScript]),
+    ),
+    (
+        "security/pdf/encrypted-needs-password.pdf",
+        Expect::Stopped(ScanError::PasswordRequired),
+    ),
 ];
 
 #[test]
@@ -208,5 +224,24 @@ fn findings_become_the_job_runner_notices() {
     for (fixture, expected) in cases {
         let report = run(fixture).unwrap_or_else(|error| panic!("{fixture}: {error:?}"));
         assert_eq!(report.notices(), expected, "{fixture}");
+    }
+}
+
+#[test]
+fn encrypted_pdfs_are_decrypted_before_they_are_measured() {
+    // The plain text is only in the decrypted content stream, so a scan that
+    // measured ciphertext would decode almost nothing (or find it corrupt).
+    for fixture in [
+        "valid/pdf/encrypted-rc4-128.pdf",
+        "valid/pdf/encrypted-aes-128.pdf",
+        "valid/pdf/encrypted-aes-256.pdf",
+    ] {
+        let report = run(fixture).unwrap_or_else(|error| panic!("{fixture}: {error:?}"));
+        assert!(
+            report.decoded_bytes >= "BT /F1 18 Tf 20 40 Td (PaperWarden corpus) Tj ET".len() as u64,
+            "{fixture} decoded {} bytes",
+            report.decoded_bytes
+        );
+        assert!(report.damage.is_empty(), "{fixture}: {:?}", report.damage);
     }
 }

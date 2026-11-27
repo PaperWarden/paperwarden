@@ -683,7 +683,49 @@ def all_fixtures() -> list[Fixture]:
 
 # The three hand-made fixtures that predate the generator. Their bytes are read
 # from disk and their purpose, provenance and expected text kept as reviewed.
-ORIGINALS = ("valid/minimal.txt", "malformed/truncated.pdf", "security/active-content-markers.txt")
+ENCRYPTED_PROVENANCE = ("Generated with pypdf 6.19.0 and cryptography 50.0.1 by "
+                        "scripts/make_encrypted_fixtures.py (random AES IVs, so kept as an original)")
+
+# Fixtures whose bytes cannot be regenerated identically. Their provenance,
+# purpose and expected result come from the manifest once reviewed; new ones
+# take theirs from NEW_ORIGINALS.
+ORIGINALS = (
+    "valid/minimal.txt",
+    "malformed/truncated.pdf",
+    "security/active-content-markers.txt",
+    "valid/pdf/encrypted-rc4-128.pdf",
+    "valid/pdf/encrypted-aes-128.pdf",
+    "valid/pdf/encrypted-aes-256.pdf",
+    "security/pdf/encrypted-flate-bomb.pdf",
+    "security/pdf/encrypted-javascript.pdf",
+    "security/pdf/encrypted-needs-password.pdf",
+)
+NEW_ORIGINALS: dict[str, tuple[str, str, str]] = {
+    "valid/pdf/encrypted-rc4-128.pdf": (
+        ENCRYPTED_PROVENANCE,
+        "One page encrypted with 128-bit RC4 (standard handler R3) and an empty user password",
+        "Accept; it opens without a password and the pre-check measures it like an unencrypted PDF"),
+    "valid/pdf/encrypted-aes-128.pdf": (
+        ENCRYPTED_PROVENANCE,
+        "One page encrypted with AES-128 (R4, AESV2 crypt filter) and an empty user password",
+        "Accept; it opens without a password and the pre-check measures it like an unencrypted PDF"),
+    "valid/pdf/encrypted-aes-256.pdf": (
+        ENCRYPTED_PROVENANCE,
+        "One page encrypted with AES-256 (R6, AESV3 crypt filter) and an empty user password",
+        "Accept; it opens without a password and the pre-check measures it like an unencrypted PDF"),
+    "security/pdf/encrypted-flate-bomb.pdf": (
+        ENCRYPTED_PROVENANCE,
+        "AES-128 content stream that inflates from about 16 KiB to 16 MiB",
+        "Stop at the decompression bound; encryption must not hide the expansion"),
+    "security/pdf/encrypted-javascript.pdf": (
+        ENCRYPTED_PROVENANCE,
+        "AES-256 PDF with document-level JavaScript (inert comment as the script)",
+        "Never execute; flag the JavaScript even though the document is encrypted"),
+    "security/pdf/encrypted-needs-password.pdf": (
+        ENCRYPTED_PROVENANCE,
+        "AES-256 PDF that needs a user password",
+        "Reject until password entry is decided; never guess or store passwords"),
+}
 
 EXTENSIONS = {
     ".pdf": ("pdf", "application/pdf", b"%PDF-"),
@@ -716,6 +758,16 @@ DECLARED: dict[str, dict] = {
     # Originals
     "valid/minimal.txt": {"facts": {"utf8": True}},
     "malformed/truncated.pdf": {"facts": {"pdf_xref_valid": False}},
+    # Encrypted PDFs (PW-042): measured after decryption with the empty password.
+    "valid/pdf/encrypted-rc4-128.pdf": {"facts": {"contains": ["/Encrypt", "/V 2", "/R 3", "/Filter /Standard"]}},
+    "valid/pdf/encrypted-aes-128.pdf": {"facts": {"contains": ["/Encrypt", "/V 4", "/R 4", "/CFM /AESV2"]}},
+    "valid/pdf/encrypted-aes-256.pdf": {"facts": {"contains": ["/Encrypt", "/V 5", "/R 6", "/CFM /AESV3"]}},
+    "security/pdf/encrypted-flate-bomb.pdf": {"outcome": "bound", "facts": {
+        "contains": ["/Encrypt", "/CFM /AESV2"], "absent": ["PaperWarden corpus"]}},
+    "security/pdf/encrypted-javascript.pdf": {"outcome": "neutralize", "facts": {
+        "contains": ["/Encrypt", "/CFM /AESV3", "/S /JavaScript"]}},
+    "security/pdf/encrypted-needs-password.pdf": {"outcome": "reject", "facts": {
+        "contains": ["/Encrypt", "/CFM /AESV3"]}},
     "security/active-content-markers.txt": {
         "outcome": "neutralize",
         "facts": {"contains": ["/JavaScript", "vbaProject.bin", ".invalid"]}},
@@ -899,9 +951,12 @@ def main(argv: list[str] | None = None) -> int:
         entries.append(manifest_entry(
             fixture.path, fixture.data, fixture.provenance, fixture.purpose, fixture.expected))
     for path in ORIGINALS:
-        reviewed = previous[path]
-        entries.append(manifest_entry(
-            path, (CORPUS / path).read_bytes(), reviewed["provenance"], reviewed["purpose"], reviewed["expected"]))
+        if path in previous:
+            reviewed = previous[path]
+            provenance, purpose, expected = reviewed["provenance"], reviewed["purpose"], reviewed["expected"]
+        else:
+            provenance, purpose, expected = NEW_ORIGINALS[path]
+        entries.append(manifest_entry(path, (CORPUS / path).read_bytes(), provenance, purpose, expected))
 
     if arguments.check:
         for path in changed:

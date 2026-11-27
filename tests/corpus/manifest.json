@@ -797,6 +797,79 @@
       }
     },
     {
+      "path": "security/pdf/encrypted-flate-bomb.pdf",
+      "sha256": "4e1774d58291f9dfffefc964526f3d1150130fd65fb3e0a2cb723cff78af114f",
+      "bytes": 17630,
+      "license": "CC0-1.0",
+      "provenance": "Generated with pypdf 6.19.0 and cryptography 50.0.1 by scripts/make_encrypted_fixtures.py (random AES IVs, so kept as an original)",
+      "category": "security",
+      "format": "pdf",
+      "media_type": "application/pdf",
+      "outcome": "bound",
+      "requires": [
+        "pdf"
+      ],
+      "purpose": "AES-128 content stream that inflates from about 16 KiB to 16 MiB",
+      "expected": "Stop at the decompression bound; encryption must not hide the expansion",
+      "facts": {
+        "signature": "255044462d",
+        "contains": [
+          "/Encrypt",
+          "/CFM /AESV2"
+        ],
+        "absent": [
+          "PaperWarden corpus"
+        ]
+      }
+    },
+    {
+      "path": "security/pdf/encrypted-javascript.pdf",
+      "sha256": "c57b0feaa5333c074e4f8d1b52fd0e0ba3de3076628ba0b8defa2171dc794965",
+      "bytes": 1949,
+      "license": "CC0-1.0",
+      "provenance": "Generated with pypdf 6.19.0 and cryptography 50.0.1 by scripts/make_encrypted_fixtures.py (random AES IVs, so kept as an original)",
+      "category": "security",
+      "format": "pdf",
+      "media_type": "application/pdf",
+      "outcome": "neutralize",
+      "requires": [
+        "pdf"
+      ],
+      "purpose": "AES-256 PDF with document-level JavaScript (inert comment as the script)",
+      "expected": "Never execute; flag the JavaScript even though the document is encrypted",
+      "facts": {
+        "signature": "255044462d",
+        "contains": [
+          "/Encrypt",
+          "/CFM /AESV3",
+          "/S /JavaScript"
+        ]
+      }
+    },
+    {
+      "path": "security/pdf/encrypted-needs-password.pdf",
+      "sha256": "582f4d54a9b1a981518ccd297066b7c43a514229cac2c3a957b081c1a4837d07",
+      "bytes": 1554,
+      "license": "CC0-1.0",
+      "provenance": "Generated with pypdf 6.19.0 and cryptography 50.0.1 by scripts/make_encrypted_fixtures.py (random AES IVs, so kept as an original)",
+      "category": "security",
+      "format": "pdf",
+      "media_type": "application/pdf",
+      "outcome": "reject",
+      "requires": [
+        "pdf"
+      ],
+      "purpose": "AES-256 PDF that needs a user password",
+      "expected": "Reject until password entry is decided; never guess or store passwords",
+      "facts": {
+        "signature": "255044462d",
+        "contains": [
+          "/Encrypt",
+          "/CFM /AESV3"
+        ]
+      }
+    },
+    {
       "path": "security/pdf/extreme-page-size.pdf",
       "sha256": "9f6dddba3d9a6cfe3a9e1ee6e9b278f8108582ecd132a45b8814e9b96803953d",
       "bytes": 848,
@@ -1242,6 +1315,81 @@
           "xl/workbook.xml",
           "xl/_rels/workbook.xml.rels",
           "xl/worksheets/sheet1.xml"
+        ]
+      }
+    },
+    {
+      "path": "valid/pdf/encrypted-aes-128.pdf",
+      "sha256": "e97e419ad114bda0d561b653ca497debb2f2ac61f2bbe9d194f6cfe399ecca72",
+      "bytes": 1305,
+      "license": "CC0-1.0",
+      "provenance": "Generated with pypdf 6.19.0 and cryptography 50.0.1 by scripts/make_encrypted_fixtures.py (random AES IVs, so kept as an original)",
+      "category": "valid",
+      "format": "pdf",
+      "media_type": "application/pdf",
+      "outcome": "accept",
+      "requires": [
+        "pdf"
+      ],
+      "purpose": "One page encrypted with AES-128 (R4, AESV2 crypt filter) and an empty user password",
+      "expected": "Accept; it opens without a password and the pre-check measures it like an unencrypted PDF",
+      "facts": {
+        "signature": "255044462d",
+        "contains": [
+          "/Encrypt",
+          "/V 4",
+          "/R 4",
+          "/CFM /AESV2"
+        ]
+      }
+    },
+    {
+      "path": "valid/pdf/encrypted-aes-256.pdf",
+      "sha256": "e0206e634abcc596088a25e46fecec68773b609e88600a8d37940616e5a7c232",
+      "bytes": 1554,
+      "license": "CC0-1.0",
+      "provenance": "Generated with pypdf 6.19.0 and cryptography 50.0.1 by scripts/make_encrypted_fixtures.py (random AES IVs, so kept as an original)",
+      "category": "valid",
+      "format": "pdf",
+      "media_type": "application/pdf",
+      "outcome": "accept",
+      "requires": [
+        "pdf"
+      ],
+      "purpose": "One page encrypted with AES-256 (R6, AESV3 crypt filter) and an empty user password",
+      "expected": "Accept; it opens without a password and the pre-check measures it like an unencrypted PDF",
+      "facts": {
+        "signature": "255044462d",
+        "contains": [
+          "/Encrypt",
+          "/V 5",
+          "/R 6",
+          "/CFM /AESV3"
+        ]
+      }
+    },
+    {
+      "path": "valid/pdf/encrypted-rc4-128.pdf",
+      "sha256": "513b6aa9491c75aaaae0f235f2ee58e4012104ff59347d6f071277986a2468c2",
+      "bytes": 1145,
+      "license": "CC0-1.0",
+      "provenance": "Generated with pypdf 6.19.0 and cryptography 50.0.1 by scripts/make_encrypted_fixtures.py (random AES IVs, so kept as an original)",
+      "category": "valid",
+      "format": "pdf",
+      "media_type": "application/pdf",
+      "outcome": "accept",
+      "requires": [
+        "pdf"
+      ],
+      "purpose": "One page encrypted with 128-bit RC4 (standard handler R3) and an empty user password",
+      "expected": "Accept; it opens without a password and the pre-check measures it like an unencrypted PDF",
+      "facts": {
+        "signature": "255044462d",
+        "contains": [
+          "/Encrypt",
+          "/V 2",
+          "/R 3",
+          "/Filter /Standard"
         ]
       }
     },

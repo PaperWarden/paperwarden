@@ -15,15 +15,14 @@ const EOF_WINDOW: usize = 1024;
 
 impl Scanner<'_, '_> {
     pub(crate) fn check_cross_references(&mut self) -> Result<(), ScanError> {
+        self.walk_chain()?;
+        self.scan_trailers()
+    }
+
+    /// Any trailer may name the encryption dictionary, even one the chain
+    /// cannot reach; the chain's newest trailer was recorded first.
+    fn scan_trailers(&mut self) -> Result<(), ScanError> {
         let data = self.data;
-        let tail = data
-            .get(data.len().saturating_sub(EOF_WINDOW)..)
-            .unwrap_or_default();
-        if find(tail, b"%%EOF").is_none() {
-            self.damaged(Damage::MissingEndOfFile);
-        }
-        // Any trailer may name the encryption dictionary, even one the chain
-        // below cannot reach.
         let mut at = 0usize;
         let mut trailers = 0u32;
         while let Some(found) = data.get(at..).and_then(|rest| find(rest, b"trailer")) {
@@ -38,6 +37,17 @@ impl Scanner<'_, '_> {
             }
         }
 
+        Ok(())
+    }
+
+    fn walk_chain(&mut self) -> Result<(), ScanError> {
+        let data = self.data;
+        let tail = data
+            .get(data.len().saturating_sub(EOF_WINDOW)..)
+            .unwrap_or_default();
+        if find(tail, b"%%EOF").is_none() {
+            self.damaged(Damage::MissingEndOfFile);
+        }
         let Some(keyword) = rfind(data, b"startxref") else {
             self.damaged(Damage::CrossReference);
             return Ok(());

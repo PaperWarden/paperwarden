@@ -38,9 +38,28 @@ job runner has staged and size-checked the input and before `PdfEngine::open`.
    for classic tables and cross-reference streams. Each in-use entry must
    point at its own object header. The number of sections is capped, and a
    cycle is damage.
-3. **Refuses encrypted documents**, which are found through any trailer, a
-   cross-reference stream or a standard security handler dictionary. Their
-   streams cannot be measured without decrypting them.
+3. **Decrypts encrypted documents in memory, only to measure them** (#67).
+   The standard security handler is opened with the **empty user password**:
+   - **Revisions:** 2 to 4 (RC4 40 to 128-bit, AES-128) and 5 to 6
+     (AES-256), with crypt filters.
+   - **The password is checked first:** algorithms 4 and 5 for revisions 2 to
+     4, algorithm 2.B for revision 6. A key is never used on trust.
+   - **Streams the handler leaves alone stay alone:** cross-reference streams,
+     `/Identity` crypt filters, and metadata when `/EncryptMetadata` is false.
+   - **Each stream is then decrypted and measured** under exactly the same
+     bounds as an unencrypted one. Object streams are decrypted before their
+     objects are checked. Decrypted bytes never leave the scan.
+
+   A document that needs a real password is refused with
+   `ScanError::PasswordRequired`. One that uses another handler (certificates,
+   custom handlers), an unknown revision or a malformed encryption dictionary
+   is refused with `ScanError::Encrypted`. The encryption dictionary is found
+   through the newest trailer or cross-reference stream. A standard handler
+   dictionary that no trailer names is still refused, never ignored.
+
+   Strings up to 128 bytes are now kept (decoded from literal or hex form),
+   because the keys and file ID live in strings. Longer strings are still
+   skipped, never stored.
 4. **Measures every stream by decoding it.** Each stream is decoded into a
    counter that discards the output (Flate, LZW, ASCIIHex, ASCII85,
    RunLength), against these bounds:
@@ -115,6 +134,25 @@ meet their outcome at the engine level.** That was 8 of 16 with PDFium alone.
 The user still sees no warning for `repair` and `neutralize` files; that is
 #61.
 
+### Encrypted PDFs (Android 15 emulator, PDFium `chromium/8125`)
+
+`encrypted-android-x64.jsonl` has the results. The six fixtures were encrypted
+by pypdf 6.19.0, which is independent of PaperWarden's code
+(`scripts/make_encrypted_fixtures.py`). All six give the same answer from the
+pre-check and from PDFium.
+
+| Fixture | Encryption | Outcome | Result | Pre-check |
+| --- | --- | --- | --- | --- |
+| valid/pdf/encrypted-rc4-128 | RC4-128, R3 | accept | rendered, "PaperWarden corpus" | 0.5 ms |
+| valid/pdf/encrypted-aes-128 | AES-128, R4 | accept | rendered | 1.1 ms |
+| valid/pdf/encrypted-aes-256 | AES-256, R6 | accept | rendered | 5.3 ms |
+| security/pdf/encrypted-flate-bomb | AES-128, R4 | bound | **limit: compression ratio**, PDFium never opened it | 0.0 ms |
+| security/pdf/encrypted-javascript | AES-256, R6 | neutralize | rendered, flagged: JavaScript | 3.5 ms |
+| security/pdf/encrypted-needs-password | AES-256, R6 | reject | **refused: needs a password** | 0.0 ms |
+
+Revision 6 is the slowest because its password hash is deliberately costly.
+It is computed twice per document, never per stream.
+
 ### Real-world PDFs (no false positives)
 
 `real-world.tsv` has 35 PDFs from 15 producers:
@@ -159,9 +197,8 @@ and print drivers are not represented yet.
 
 ## Not covered yet
 
-- **Encrypted PDFs are refused**, including those with an empty user password,
-  which PDFium would open. Measuring them needs the standard security
-  handler's decryption.
+- **Password-protected PDFs** are refused until password entry is decided:
+  it needs a user interface, and the password must never be stored.
 - **Inline images** (`BI ... ID ... EI`) inside content streams are not
   bounded by their dimensions. Their compressed data counts toward the content
   stream, but not their expansion.

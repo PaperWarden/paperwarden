@@ -13,3 +13,8 @@ workspace = true
 [dependencies]
 paperwarden-core = { path = "../.." }
 miniz_oxide = { version = "0.9.1", default-features = false, features = ["with-alloc"] }
+# Decrypting encrypted PDFs in memory, only to measure them (PW-042): the
+# standard security handler's MD5, SHA-2 and AES (CBC and RC4 are in crypt.rs).
+aes = { version = "0.9", default-features = false }
+md-5 = { version = "0.11", default-features = false }
+sha2 = { version = "0.11", default-features = false }

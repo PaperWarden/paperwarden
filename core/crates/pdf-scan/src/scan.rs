@@ -1,5 +1,6 @@
 //! The scan itself: find every object, then measure every stream.
 
+use crate::crypt::{CryptError, Decryptor};
 use crate::filters::{self, DecodeError, Filter, Stop};
 use crate::syntax::{is_whitespace, Dict, Object, Parser, Seen, Token};
 use crate::{ActiveContent, Damage, Interrupted, Limit, Report, ScanError, ScanLimits};
@@ -19,12 +20,15 @@ struct Header {
     start: usize,
     body: usize,
     number: u32,
+    generation: u16,
 }
 
 struct StreamRef {
     dict: Dict,
     start: usize,
     end: usize,
+    number: u32,
+    generation: u16,
 }
 
 pub(crate) struct Scanner<'a, 'c> {
@@ -35,7 +39,13 @@ pub(crate) struct Scanner<'a, 'c> {
     pub(crate) index: HashMap<u32, usize>,
     pub(crate) damage: Vec<Damage>,
     seen: Seen,
-    pub(crate) encrypted: bool,
+    /// The newest trailer's `/Encrypt` (a reference or a dictionary).
+    pub(crate) encrypt: Option<Object>,
+    /// The first element of the newest trailer's `/ID`.
+    pub(crate) file_id: Option<Vec<u8>>,
+    /// A standard security handler dictionary was seen somewhere.
+    pub(crate) handler_seen: bool,
+    decryptor: Option<Decryptor>,
     objects: u32,
     streams: u32,
     decoded: u64,
@@ -57,7 +67,10 @@ impl<'a, 'c> Scanner<'a, 'c> {
             index: HashMap::new(),
             damage: Vec::new(),
             seen: Seen::default(),
-            encrypted: false,
+            encrypt: None,
+            file_id: None,
+            handler_seen: false,
+            decryptor: None,
             objects: 0,
             streams: 0,
             decoded: 0,
@@ -80,8 +93,8 @@ impl<'a, 'c> Scanner<'a, 'c> {
         if self.objects == 0 {
             return Err(ScanError::NoObjects);
         }
-        if self.encrypted {
-            return Err(ScanError::Encrypted);
+        if self.encrypt.is_some() || self.handler_seen {
+            self.decryptor = Some(self.open_encryption()?);
         }
         for stream in &streams {
             self.measure(stream)?;
@@ -123,11 +136,12 @@ impl<'a, 'c> Scanner<'a, 'c> {
             if data.get(at).copied().is_some_and(is_regular) {
                 continue;
             }
-            if let Some((start, number)) = header_before(data, keyword) {
+            if let Some((start, number, generation)) = header_before(data, keyword) {
                 headers.push(Header {
                     start,
                     body: at,
                     number,
+                    generation,
                 });
                 if headers.len() > self.limits.max_objects as usize {
                     return Err(ScanError::Limit(Limit::Objects));
@@ -227,7 +241,13 @@ impl<'a, 'c> Scanner<'a, 'c> {
                         if let Some(n) = dict.int(b"N").and_then(|n| u64::try_from(n).ok()) {
                             self.colour_spaces.insert(header.number, n.max(1));
                         }
-                        streams.push(StreamRef { dict, start, end });
+                        streams.push(StreamRef {
+                            dict,
+                            start,
+                            end,
+                            number: header.number,
+                            generation: header.generation,
+                        });
                     }
                 }
                 Token::Object(Object::Array(items)) => {
@@ -250,12 +270,44 @@ impl<'a, 'c> Scanner<'a, 'c> {
         Ok(())
     }
 
+    /// Records a trailer's (or cross-reference stream's) `/Encrypt` and
+    /// `/ID`. The first seen wins, so call this newest trailer first.
     pub(crate) fn note_encryption(&mut self, dict: &Dict) {
-        let standard_handler =
-            dict.name(b"Filter") == Some(&b"Standard"[..]) && dict.has(b"O") && dict.has(b"U");
-        if dict.has(b"Encrypt") || standard_handler {
-            self.encrypted = true;
+        if dict.name(b"Filter") == Some(&b"Standard"[..]) && dict.has(b"O") && dict.has(b"U") {
+            self.handler_seen = true;
         }
+        if let Some(encrypt) = dict.get(b"Encrypt") {
+            if self.encrypt.is_none() {
+                self.encrypt = Some(encrypt.clone());
+                if let Some(Object::Array(ids)) = dict.get(b"ID") {
+                    if let Some(Object::Str(Some(id))) = ids.first() {
+                        self.file_id = Some(id.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    /// Opens the standard security handler with the empty password.
+    fn open_encryption(&self) -> Result<Decryptor, ScanError> {
+        let dict = match &self.encrypt {
+            Some(Object::Dict(dict)) => dict.clone(),
+            Some(Object::Ref(number)) => {
+                let start = *self.index.get(number).ok_or(ScanError::Encrypted)?;
+                let mut parser = self.parser(start);
+                parser.object_header().ok_or(ScanError::Encrypted)?;
+                match parser.next() {
+                    Ok(Token::Object(Object::Dict(dict))) => dict,
+                    _ => return Err(ScanError::Encrypted),
+                }
+            }
+            _ => return Err(ScanError::Encrypted),
+        };
+        let id = self.file_id.clone().unwrap_or_default();
+        Decryptor::new(&dict, &id).map_err(|error| match error {
+            CryptError::NeedsPassword => ScanError::PasswordRequired,
+            CryptError::Unsupported => ScanError::Encrypted,
+        })
     }
 
     fn components_of_name(name: &[u8]) -> Option<u64> {
@@ -303,7 +355,23 @@ impl<'a, 'c> Scanner<'a, 'c> {
         self.streams = self.streams.saturating_add(1);
         self.check()?;
         let dict = &stream.dict;
-        let encoded = self.data.get(stream.start..stream.end).unwrap_or_default();
+        let raw = self.data.get(stream.start..stream.end).unwrap_or_default();
+        let decrypted;
+        let encoded: &[u8] = match &self.decryptor {
+            Some(decryptor) if decryptor.applies_to(dict) => {
+                match decryptor.decrypt(stream.number, stream.generation, raw) {
+                    Some(plain) => {
+                        decrypted = plain;
+                        &decrypted
+                    }
+                    None => {
+                        self.damaged(Damage::CorruptStream);
+                        return Ok(());
+                    }
+                }
+            }
+            _ => raw,
+        };
         let is_image = dict.name(b"Subtype") == Some(&b"Image"[..]);
         let is_object_stream = dict.name(b"Type") == Some(&b"ObjStm"[..]);
         let chain = filters::chain(dict);
@@ -515,8 +583,9 @@ pub(crate) fn rfind(haystack: &[u8], needle: &[u8]) -> Option<usize> {
         .rposition(|window| window == needle)
 }
 
-/// Parses `N G` backwards from the `obj` keyword at `keyword`.
-fn header_before(data: &[u8], keyword: usize) -> Option<(usize, u32)> {
+/// Parses `N G` backwards from the `obj` keyword at `keyword`, returning
+/// where `N` starts, `N` and `G`.
+fn header_before(data: &[u8], keyword: usize) -> Option<(usize, u32, u16)> {
     let mut at = keyword;
     let back_over = |at: &mut usize, test: fn(u8) -> bool| -> usize {
         let end = *at;
@@ -526,9 +595,15 @@ fn header_before(data: &[u8], keyword: usize) -> Option<(usize, u32)> {
         end - *at
     };
     back_over(&mut at, is_whitespace);
+    let generation_end = at;
     if back_over(&mut at, |byte| byte.is_ascii_digit()) == 0 {
         return None;
     }
+    let generation_digits = data.get(at..generation_end)?;
+    let generation = std::str::from_utf8(generation_digits)
+        .ok()?
+        .parse::<u16>()
+        .ok()?;
     if back_over(&mut at, is_whitespace) == 0 {
         return None;
     }
@@ -541,7 +616,7 @@ fn header_before(data: &[u8], keyword: usize) -> Option<(usize, u32)> {
     }
     let digits = data.get(at..number_end)?;
     let number = std::str::from_utf8(digits).ok()?.parse::<u32>().ok()?;
-    Some((at, number))
+    Some((at, number, generation))
 }
 
 #[cfg(test)]
@@ -552,7 +627,7 @@ mod tests {
     fn headers_are_found_backwards_from_obj() {
         let data = b"%PDF-1.7\n12 0 obj\n<<>>\nendobj\nx13 0 obj\n";
         let keyword = find(data, b"obj").expect("obj");
-        assert_eq!(header_before(data, keyword), Some((9, 12)));
+        assert_eq!(header_before(data, keyword), Some((9, 12, 0)));
         let second = rfind(data, b"obj").expect("obj");
         assert_eq!(header_before(data, second), None, "x13 is not a number");
     }

@@ -209,13 +209,30 @@ fn every_kind_of_active_content_is_reported() {
 }
 
 #[test]
-fn encrypted_documents_are_refused() {
+fn malformed_or_foreign_encryption_is_refused() {
+    // Keys too short to be real, a certificate handler, an unknown revision.
+    for dict in [
+        &b"<< /Filter /Standard /V 2 /R 3 /O (x) /U (y) /P -4 >>"[..],
+        b"<< /Filter /Adobe.PubSec /V 4 /R 4 >>",
+        b"<< /Filter /Standard /V 9 /R 9 /O (x) /U (y) >>",
+    ] {
+        let mut objects = base();
+        objects.push(dict.to_vec());
+        assert_eq!(
+            check(&pdf(&objects, "/Encrypt 4 0 R /ID [<00> <00>]")),
+            Err(ScanError::Encrypted),
+            "{}",
+            String::from_utf8_lossy(dict)
+        );
+    }
+}
+
+#[test]
+fn an_unreachable_encryption_dictionary_is_still_refused() {
     let mut objects = base();
     objects.push(b"<< /Filter /Standard /V 2 /R 3 /O (x) /U (y) /P -4 >>".to_vec());
-    assert_eq!(
-        check(&pdf(&objects, "/Encrypt 4 0 R")),
-        Err(ScanError::Encrypted)
-    );
+    // No trailer names it, so it cannot be opened, but it is not ignored.
+    assert_eq!(check(&pdf(&objects, "")), Err(ScanError::Encrypted));
 }
 
 #[test]

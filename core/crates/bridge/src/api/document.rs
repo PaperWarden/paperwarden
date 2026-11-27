@@ -47,8 +47,10 @@ pub enum RefusalReason {
     NotPdf,
     /// The PDF has no content to show.
     NoContent,
-    /// The PDF is encrypted, which is not supported yet.
+    /// The PDF uses a kind of encryption PaperWarden cannot open.
     Encrypted,
+    /// The PDF needs a password, which PaperWarden does not ask for yet.
+    PasswordRequired,
     /// The file is larger than PaperWarden opens.
     TooLarge,
     /// The PDF nests its contents more deeply than real documents do.
@@ -149,6 +151,7 @@ pub fn check_pdf(path: String, cancel: &CancelHandle) -> Result<DocumentCheck, B
         Err(ScanError::NotPdf) => RefusalReason::NotPdf,
         Err(ScanError::NoObjects) => RefusalReason::NoContent,
         Err(ScanError::Encrypted) => RefusalReason::Encrypted,
+        Err(ScanError::PasswordRequired) => RefusalReason::PasswordRequired,
         Err(ScanError::Limit(Limit::Nesting)) => RefusalReason::NestedTooDeeply,
         Err(ScanError::Limit(Limit::Objects)) => RefusalReason::TooManyParts,
         Err(ScanError::Limit(Limit::Sections)) => RefusalReason::TooManyRevisions,
@@ -189,6 +192,21 @@ mod tests {
     }
 
     #[test]
+    fn encrypted_pdfs_that_open_without_a_password_are_checked() {
+        assert_eq!(
+            check("valid/pdf/encrypted-aes-256.pdf"),
+            DocumentCheck {
+                refusal: None,
+                notices: vec![]
+            }
+        );
+        assert_eq!(
+            check("security/pdf/encrypted-javascript.pdf").notices,
+            [DocumentNotice::Scripts]
+        );
+    }
+
+    #[test]
     fn repairs_and_inert_content_become_typed_notices() {
         assert_eq!(
             check("malformed/pdf/no-eof-marker.pdf").notices,
@@ -209,6 +227,14 @@ mod tests {
                 RefusalReason::NestedTooDeeply,
             ),
             ("malformed/pdf/header-only.pdf", RefusalReason::NoContent),
+            (
+                "security/pdf/encrypted-needs-password.pdf",
+                RefusalReason::PasswordRequired,
+            ),
+            (
+                "security/pdf/encrypted-flate-bomb.pdf",
+                RefusalReason::ExpandsTooMuch,
+            ),
             ("valid/minimal.txt", RefusalReason::NotPdf),
         ] {
             assert_eq!(check(fixture), refused(reason), "{fixture}");

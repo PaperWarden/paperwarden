@@ -43,7 +43,10 @@ String refusalReason(RefusalReason reason) => switch (reason) {
       RefusalReason.notPdf => "This file isn't a PDF, whatever its name says.",
       RefusalReason.noContent => 'This PDF is empty or too damaged to repair.',
       RefusalReason.encrypted =>
-        "This PDF is encrypted. Opening encrypted PDFs isn't supported yet.",
+        "This PDF uses a kind of encryption PaperWarden can't open.",
+      RefusalReason.passwordRequired =>
+        "This PDF needs a password. Opening password-protected PDFs isn't "
+            'supported yet.',
       RefusalReason.tooLarge =>
         'This file is larger than PaperWarden can open safely.',
       RefusalReason.nestedTooDeeply =>

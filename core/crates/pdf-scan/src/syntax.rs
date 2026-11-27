@@ -13,6 +13,9 @@ use crate::{ActiveContent, Limit};
 /// truncated, which only matters for names no check looks at.
 const MAX_NAME: usize = 256;
 
+/// Longest string kept, in bytes: enough for encryption keys and IDs.
+pub(crate) const MAX_STRING: usize = 128;
+
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Object {
     Null,
@@ -20,7 +23,9 @@ pub(crate) enum Object {
     Int(i64),
     Real,
     Name(Vec<u8>),
-    Str,
+    /// A string's bytes when at most [`MAX_STRING`] long, otherwise `None`:
+    /// long strings are skipped, never kept.
+    Str(Option<Vec<u8>>),
     Array(Vec<Object>),
     Dict(Dict),
     Ref(u32),
@@ -128,7 +133,7 @@ fn classify(key: &[u8], value: &Object, seen: &mut Seen) {
             seen.add(kind);
         }
         (b"JS", _) => seen.add(ActiveContent::JavaScript),
-        (b"URI", Object::Str) => seen.add(ActiveContent::Uri),
+        (b"URI", Object::Str(_)) => seen.add(ActiveContent::Uri),
         (b"EmbeddedFiles", _) => seen.add(ActiveContent::EmbeddedFile),
         (b"Type", Object::Name(kind)) if kind.as_slice() == b"EmbeddedFile" => {
             seen.add(ActiveContent::EmbeddedFile);
@@ -212,10 +217,7 @@ impl<'a> Parser<'a> {
                 self.pos += 1;
                 Ok(Token::Object(Object::Name(self.name())))
             }
-            b'(' => {
-                self.literal_string();
-                Ok(Token::Object(Object::Str))
-            }
+            b'(' => Ok(Token::Object(Object::Str(self.literal_string()))),
             b'<' if self.peek_at(1) == Some(b'<') => {
                 self.pos += 2;
                 self.dict(depth)
@@ -223,13 +225,7 @@ impl<'a> Parser<'a> {
             }
             b'<' => {
                 self.pos += 1;
-                while let Some(byte) = self.peek() {
-                    self.pos += 1;
-                    if byte == b'>' {
-                        break;
-                    }
-                }
-                Ok(Token::Object(Object::Str))
+                Ok(Token::Object(Object::Str(self.hex_string())))
             }
             b'[' => {
                 self.pos += 1;
@@ -346,24 +342,99 @@ impl<'a> Parser<'a> {
         name
     }
 
-    fn literal_string(&mut self) {
+    /// Reads a literal string, decoding escapes, and returns its bytes if it
+    /// is at most [`MAX_STRING`] long.
+    fn literal_string(&mut self) -> Option<Vec<u8>> {
         self.pos += 1;
         let mut open = 1usize;
+        let mut out = Vec::new();
+        let keep = |out: &mut Vec<u8>, byte: u8| {
+            if out.len() <= MAX_STRING {
+                out.push(byte);
+            }
+        };
         while let Some(byte) = self.peek() {
             self.pos += 1;
             match byte {
-                b'\\' => self.pos += 1,
-                b'(' => open += 1,
+                b'\\' => {
+                    let Some(escaped) = self.peek() else { break };
+                    self.pos += 1;
+                    match escaped {
+                        b'n' => keep(&mut out, b'\n'),
+                        b'r' => keep(&mut out, b'\r'),
+                        b't' => keep(&mut out, b'\t'),
+                        b'b' => keep(&mut out, 0x08),
+                        b'f' => keep(&mut out, 0x0C),
+                        b'0'..=b'7' => {
+                            let mut value = u32::from(escaped - b'0');
+                            for _ in 0..2 {
+                                match self.peek() {
+                                    Some(digit @ b'0'..=b'7') => {
+                                        self.pos += 1;
+                                        value = value * 8 + u32::from(digit - b'0');
+                                    }
+                                    _ => break,
+                                }
+                            }
+                            keep(&mut out, (value & 0xFF) as u8);
+                        }
+                        // A backslash before an end of line joins the lines.
+                        b'\r' => {
+                            if self.peek() == Some(b'\n') {
+                                self.pos += 1;
+                            }
+                        }
+                        b'\n' => {}
+                        other => keep(&mut out, other),
+                    }
+                }
+                b'(' => {
+                    open += 1;
+                    keep(&mut out, byte);
+                }
                 b')' => {
                     open -= 1;
                     if open == 0 {
-                        return;
+                        break;
                     }
+                    keep(&mut out, byte);
                 }
-                _ => {}
+                _ => keep(&mut out, byte),
             }
         }
         self.pos = self.pos.min(self.data.len());
+        (out.len() <= MAX_STRING).then_some(out)
+    }
+
+    /// Reads a hexadecimal string after its `<`, returning its bytes if it is
+    /// at most [`MAX_STRING`] long. An odd final digit counts as if followed
+    /// by 0.
+    fn hex_string(&mut self) -> Option<Vec<u8>> {
+        let mut out = Vec::new();
+        let mut high: Option<u8> = None;
+        while let Some(byte) = self.peek() {
+            self.pos += 1;
+            if byte == b'>' {
+                break;
+            }
+            let Some(digit) = hex_value(byte) else {
+                continue;
+            };
+            match high.take() {
+                Some(value) => {
+                    if out.len() <= MAX_STRING {
+                        out.push(value * 16 + digit);
+                    }
+                }
+                None => high = Some(digit),
+            }
+        }
+        if let Some(value) = high {
+            if out.len() <= MAX_STRING {
+                out.push(value * 16);
+            }
+        }
+        (out.len() <= MAX_STRING).then_some(out)
     }
 
     /// Reads an unsigned integer at the current position without signs.
@@ -517,7 +588,39 @@ mod tests {
     #[test]
     fn strings_with_nesting_and_escapes_are_skipped_whole() {
         let mut parser = Parser::new(b"(a (b) \\) c) /Next", 0, 32, 10);
-        assert_eq!(parser.next(), Ok(Token::Object(Object::Str)));
+        assert_eq!(
+            parser.next(),
+            Ok(Token::Object(Object::Str(Some(b"a (b) ) c".to_vec()))))
+        );
+        assert_eq!(
+            parser.next(),
+            Ok(Token::Object(Object::Name(b"Next".to_vec())))
+        );
+    }
+
+    #[test]
+    fn strings_decode_escapes_octal_hex_and_skip_long_ones() {
+        let mut parser = Parser::new(b"(\\101\\n\\\\x\\\ny) <48 65 6C6c 6F> <ABC>", 0, 32, 10);
+        assert_eq!(
+            parser.next(),
+            Ok(Token::Object(Object::Str(Some(b"A\n\\xy".to_vec()))))
+        );
+        assert_eq!(
+            parser.next(),
+            Ok(Token::Object(Object::Str(Some(b"Hello".to_vec()))))
+        );
+        assert_eq!(
+            parser.next(),
+            Ok(Token::Object(Object::Str(Some(vec![0xAB, 0xC0]))))
+        );
+        let long = [
+            b"(".to_vec(),
+            vec![b'x'; MAX_STRING + 1],
+            b") /Next".to_vec(),
+        ]
+        .concat();
+        let mut parser = Parser::new(&long, 0, 32, 10);
+        assert_eq!(parser.next(), Ok(Token::Object(Object::Str(None))));
         assert_eq!(
             parser.next(),
             Ok(Token::Object(Object::Name(b"Next".to_vec())))
