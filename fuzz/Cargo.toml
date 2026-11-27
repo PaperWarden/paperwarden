@@ -17,3 +17,24 @@ path = "fuzz_targets/job_id.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "archive_entry_path"
+path = "fuzz_targets/archive_entry_path.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "magic_bytes"
+path = "fuzz_targets/magic_bytes.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "job_pipeline"
+path = "fuzz_targets/job_pipeline.rs"
+test = false
+doc = false
+bench = false

@@ -31,6 +31,7 @@ must equal its library name, or Cargokit silently ships no library. The fuzz har
 | `engine` | The `Processor` and `OutputVerifier` seam, bounded output writer, checkpoints | Create workspaces or export |
 | `runner` | Driving one job: stage, validate, process, verify, export, clean | Contain format logic |
 | `export` (private) | Copying a verified output to a new file | Overwrite anything |
+| `archive` | Archive entry-path rules (`EntryPath`): relative, bounded names, UTF-8 or legacy CP437 | Extract; extraction arrives with the archive engine |
 
 How a job runs (`JobRunner::run`):
 
@@ -59,7 +60,7 @@ Planned boundaries are created by their own issue, not ahead of time:
 | Planned module | Purpose | Invariants |
 | --- | --- | --- |
 | `limits` additions | Decompression, nesting, dimension and memory bounds | 11 |
-| `archive` | Safe extraction: traversal, absolute paths, links, bombs | 11 |
+| `archive` extraction | Links, nested archives, decompression bombs | 11 |
 | `security`, `privacy`, `pdf` | Reserved; `CODEOWNERS` requires core-team review | — |
 
 Rules between modules:
