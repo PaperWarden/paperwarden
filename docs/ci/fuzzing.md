@@ -13,6 +13,7 @@ fails when a rule is broken, not just on a panic.
 | `magic_bytes` | `validation::MagicBytes` | Never panics on any header or offset, including offsets near `usize::MAX`, and accepts exactly the inputs that carry the signature. |
 | `job_pipeline` | `JobRunner`, staging, limits, verification, export, cleanup | For any input file and any stub-engine behaviour (copy, no output, oversized output, engine error, cancellation, wrong output): invalid input never becomes exportable, export refuses to overwrite the original, an exported file holds exactly the verified output, the original is never modified, and no workspace remains afterwards. |
 | `store_search` | `paperwarden_store::Store::search`, `index_document`, `remove_document` | Any query is accepted as literal text and never errors, any text can be indexed and removed, and an unrelated indexed document stays findable. |
+| `pdf_scan` | `paperwarden_pdf_scan::scan`, with the default limits and with tight ones | Any input finishes without panicking, gives the same answer twice, reports no more objects or decoded bytes than its limits allow, and stops at the first checkpoint that asks it to. |
 
 The targets were checked against planted bugs: removing the backslash rule from
 `EntryPath` made `archive_entry_path` fail within about 1,500 runs without

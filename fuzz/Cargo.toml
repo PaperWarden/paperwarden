@@ -11,6 +11,7 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 paperwarden-core = { path = "../core" }
 paperwarden-store = { path = "../core/crates/store" }
+paperwarden-pdf-scan = { path = "../core/crates/pdf-scan" }
 
 [[bin]]
 name = "job_id"
@@ -43,6 +44,13 @@ bench = false
 [[bin]]
 name = "store_search"
 path = "fuzz_targets/store_search.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pdf_scan"
+path = "fuzz_targets/pdf_scan.rs"
 test = false
 doc = false
 bench = false

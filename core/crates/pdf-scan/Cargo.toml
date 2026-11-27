@@ -1,0 +1,14 @@
+[package]
+name = "paperwarden-pdf-scan"
+version = "0.0.1"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "PaperWarden's PDF pre-check: bounds every PDF before PDFium opens it (ADR-0007)"
+
+[lints]
+workspace = true
+
+[dependencies]
+miniz_oxide = { version = "0.9.1", default-features = false, features = ["with-alloc"] }
