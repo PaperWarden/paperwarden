@@ -13,3 +13,5 @@ All notable changes will be documented here after the first release baseline.
 - Built the Home and Tools tabs. The Files shortcut works; Scan, Convert and every
   tool are marked "Coming soon" and cannot be opened until their engines pass
   feasibility.
+- Built the Files tab layout (search, filters, folders and recent files) with
+  empty states; it reads no files until the library model is decided.
