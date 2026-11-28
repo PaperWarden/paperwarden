@@ -47,3 +47,27 @@ must not be added until their redistribution obligations are reviewed here.
   JPEG Group").
 - **Rust binding:** `pdfium-render` 0.9.6 (MIT OR Apache-2.0) and its crates,
   recorded in `third_party/dependencies.json`.
+
+## qpdf (feasibility review, PW-012; not yet shipped)
+
+- **Build:** compiled from upstream source by `core/crates/qpdf/build.rs`,
+  with qpdf's native crypto only (no OpenSSL or GnuTLS). The release archives
+  and their SHA-256 digests are pinned in `scripts/fetch_qpdf.py`.
+- **Processes attacker-controlled content:** yes, every PDF a structure tool
+  is given.
+
+  | Component | Version | License | Source |
+  | --- | --- | --- | --- |
+  | qpdf | 12.4.2 | Apache-2.0 (Artistic-2.0 also offered for old versions; not elected) | github.com/qpdf/qpdf releases |
+  | qpdf's Rijndael (`rijndael.cc`) | bundled | public domain | qpdf |
+  | qpdf's SHA-2 (sphlib 3.0) | bundled | MIT | qpdf |
+  | zlib | 1.3.2 | Zlib | github.com/madler/zlib releases |
+  | IJG libjpeg | 9f | IJG | ijg.org |
+
+- **Obligations:** ship qpdf's `LICENSE.txt` and `NOTICE.md` (Apache-2.0
+  section 4), the sphlib MIT notice from `NOTICE.md`, the zlib license, and
+  the IJG statement ("This software is based in part on the work of the
+  Independent JPEG Group") in the app's open-source notices.
+- **Rust binding:** none from crates.io. PaperWarden declares the handful of
+  C functions it calls (`core/crates/qpdf/src/ffi.rs`); the crate's only
+  dependency beyond the workspace is `cc` (build-only, already inventoried).

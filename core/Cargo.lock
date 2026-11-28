@@ -600,6 +600,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "paperwarden-qpdf"
+version = "0.0.1"
+dependencies = [
+ "cc",
+ "paperwarden-core",
+ "paperwarden-pdf-scan",
+]
+
+[[package]]
 name = "paperwarden-store"
 version = "0.0.1"
 dependencies = [

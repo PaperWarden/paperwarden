@@ -78,3 +78,10 @@ All notable changes will be documented here after the first release baseline.
   watchdog that kills it at the time limit. Each job gets a fresh process, and
   a crash or overrun there is a typed error that leaves no workspace. CI checks
   the merged manifest and that the APK carries PDFium for every ABI.
+- Prototyped qpdf 12.4.2 for PDF structure tools (PW-012, #15): rewrite and
+  repair, rotate, extract and merge pages, and AES-256 encryption and
+  decryption, through the job runner with the PDF pre-check before qpdf and
+  verified output after it. qpdf is built from pinned upstream source with its
+  own crypto, its unbounded default limits are replaced, and it never prints.
+  Every corpus PDF gives the same result on Windows, the Android emulator and
+  in CI; qpdf adds about 2.8 MB to an arm64 binary.
