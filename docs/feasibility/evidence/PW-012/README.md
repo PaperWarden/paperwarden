@@ -20,7 +20,8 @@ One line per corpus PDF:
 - `check`: `qpdf --check` on the input.
 - `job_ms`, `qpdf_ms`: wall-clock times.
 
-The iOS simulator results come from CI (`qpdf-ios` in
-`.github/workflows/ios.yml`, artifact `PW-012-ios-evidence`).
+- `ios-simulator-arm64.jsonl`: an iPhone simulator in CI (`qpdf-ios` in
+  `.github/workflows/ios.yml`, run 46140756287, artifact
+  `PW-012-ios-evidence`), release-mode test binary.
 
 To reproduce, see "Reproducing" in `../../PW-012-qpdf.md`.

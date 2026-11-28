@@ -4,7 +4,7 @@
 **Date:** 2026-11-28  
 **Result:** Feasible. qpdf 12.4.2, built from pinned upstream source, performs
 every structural transform and encryption flow tested, with identical results
-on Windows and on the Android emulator; on the iOS simulator in CI (see "iOS").
+on Windows, the Android emulator and the iOS simulator.
 It handles every malformed and hostile corpus file without crashing, printing
 or hanging. Like PDFium it parses hostile input in native code, so the same
 containment question applies (finding 1).  
@@ -90,11 +90,18 @@ ABI and for iOS devices.
 
 ## iOS
 
-The `qpdf-ios` CI job builds the probe for iOS devices and checks two things:
-the size, and that it imports no network API. It then runs the five qpdf tests
-on an iOS simulator, writing `ios-simulator-arm64.jsonl` to the
-`PW-012-ios-evidence` artifact. Its results are in the PR, since this machine
-has no macOS.
+The `qpdf-ios` CI job (iOS 17 deployment target, macOS runner):
+
+- **Simulator:** the five qpdf tests passed on an iPhone simulator, and every
+  corpus PDF gave the same result as on Windows and Android
+  (`ios-simulator-arm64.jsonl`).
+- **Device build:** the arm64 probe is 2,523,088 bytes stripped (1,064,366
+  gzip -9) in total, including Rust's standard library. It links only Apple
+  system libraries and imports no network API.
+- **Fixed along the way:** `cc` compiled the C and C++ for the SDK's newest
+  iOS while Rust linked for an older one, which failed on `___chkstk_darwin`.
+  `build.rs` now requires `IPHONEOS_DEPLOYMENT_TARGET` on iOS. Xcode sets it
+  for the app; CI sets 17.0, the app's minimum (ADR-0007).
 
 ## Findings
 
