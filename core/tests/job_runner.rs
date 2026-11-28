@@ -732,3 +732,60 @@ mod unix {
         fs::remove_file(fixture.work_root.join("pw-link")).expect("remove link");
     }
 }
+
+// --- Engines in another process (#59) -----------------------------------------
+
+#[test]
+fn an_engine_in_another_process_writes_the_output_it_was_given() {
+    let fixture = Fixture::new("out-of-process");
+    let processor = FnProcessor(|context: &mut ProcessContext<'_>| {
+        // The output is created here, then written through its path the way
+        // a separate process writes through a file descriptor.
+        drop(context.create_output()?);
+        let output = context.output_path();
+        assert!(output.starts_with(&fixture.work_root), "{output:?}");
+        assert!(!output.to_string_lossy().contains("original"));
+        fs::write(output, b"%PWT-from-elsewhere")?;
+        Ok(())
+    });
+    let mut ready = run(
+        &fixture,
+        &fixture.runner(),
+        &processor,
+        &FnVerifier(accept),
+        &CancellationToken::new(),
+    )
+    .expect("job ready");
+    let destination = fixture.root.join("result.pwt");
+    ready.export_to(&destination).expect("export");
+    ready.finish();
+    assert_eq!(
+        fs::read(&destination).expect("read"),
+        b"%PWT-from-elsewhere"
+    );
+    fixture.assert_clean();
+}
+
+#[test]
+fn an_engine_can_hand_on_the_time_left_in_the_job() {
+    let fixture = Fixture::new("remaining-time");
+    let limits = JobLimits::new(1 << 20, 1 << 20, Duration::from_secs(30)).expect("limits");
+    let processor = FnProcessor(|context: &mut ProcessContext<'_>| {
+        let left = context.remaining_time().expect("the job has a deadline");
+        assert!(
+            left > Duration::ZERO && left <= Duration::from_secs(30),
+            "{left:?}"
+        );
+        uppercase(context)
+    });
+    run(
+        &fixture,
+        &fixture.runner_with(limits),
+        &processor,
+        &FnVerifier(accept),
+        &CancellationToken::new(),
+    )
+    .expect("job ready")
+    .finish();
+    fixture.assert_clean();
+}
