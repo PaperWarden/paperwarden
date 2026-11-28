@@ -15,7 +15,7 @@ verifiable outputs, portability, and reproducible releases.
 | Core | Rust | Validation, job orchestration, metadata, security, conversion, search |
 | Bridge | flutter_rust_bridge / FFI | Narrow, generated Flutter-to-Rust contract |
 | PDF rendering | PDFium candidate | Pages, thumbnails, search/text where supported |
-| PDF structure | qpdf candidate (PW-012 prototype) | Structural transforms, encryption, merge/split |
+| PDF structure | qpdf (ADR-0008) | Structural transforms, encryption, merge/split |
 | Office conversion | LibreOffice components candidate | Local preview/conversion where packaging is viable |
 | OCR | Tesseract candidate | Offline recognition |
 | Image processing | OpenCV/native/Rust candidates | Crop, perspective, deskew, cleanup |

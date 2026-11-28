@@ -8,7 +8,7 @@ on Windows and on the Android emulator; on the iOS simulator in CI (see "iOS").
 It handles every malformed and hostile corpus file without crashing, printing
 or hanging. Like PDFium it parses hostile input in native code, so the same
 containment question applies (finding 1).  
-**Decision record:** none yet; adopting qpdf needs an ADR (follow-ups).  
+**Decision record:** ADR-0008 (Accepted 2026-11-28)  
 **Evidence:** `docs/feasibility/evidence/PW-012/`
 
 ## What was tested
@@ -134,7 +134,7 @@ has no macOS.
 
 ## Follow-ups
 
-- An ADR to adopt qpdf, deciding containment on Android (finding 1).
+- ~~An ADR to adopt qpdf~~: ADR-0008, with qpdf in the Android isolated process (finding 1).
 - Run qpdf in the Android isolated process (with #59) and package it with the
   app's notices (`THIRD_PARTY_LICENSES.md`).
 - Multi-input jobs for merge (finding 5), and a pre-check that takes a
