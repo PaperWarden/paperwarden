@@ -1,0 +1,16 @@
+{"fixture":"malformed/pdf/bad-xref-offsets.pdf","outcome":"repair","job":"repaired","job_ms":48,"qpdf_alone":"Ok(Repaired)","qpdf_ms":5,"check":"Ok(Repaired)"}
+{"fixture":"malformed/pdf/header-only.pdf","outcome":"reject","job":"stopped: the PDF has no content","job_ms":9,"qpdf_alone":"Err(Failed)","qpdf_ms":2,"check":"Err(Failed)"}
+{"fixture":"malformed/pdf/no-eof-marker.pdf","outcome":"repair","job":"repaired","job_ms":25,"qpdf_alone":"Ok(Clean)","qpdf_ms":4,"check":"Ok(Clean)"}
+{"fixture":"malformed/truncated.pdf","outcome":"reject","job":"stopped: the PDF has no content","job_ms":9,"qpdf_alone":"Err(Failed)","qpdf_ms":1,"check":"Err(Failed)"}
+{"fixture":"security/pdf/deep-nesting.pdf","outcome":"bound","job":"stopped: the PDF nests objects too deeply","job_ms":32,"qpdf_alone":"Ok(Repaired)","qpdf_ms":4,"check":"Ok(Repaired)"}
+{"fixture":"security/pdf/extreme-page-size.pdf","outcome":"bound","job":"rewritten","job_ms":38,"qpdf_alone":"Ok(Clean)","qpdf_ms":4,"check":"Ok(Clean)"}
+{"fixture":"security/pdf/flate-bomb.pdf","outcome":"bound","job":"stopped: part of the PDF expands far more than real content does","job_ms":23,"qpdf_alone":"Ok(Clean)","qpdf_ms":3,"check":"Ok(Clean)"}
+{"fixture":"security/pdf/javascript-openaction.pdf","outcome":"neutralize","job":"rewritten, flagged","job_ms":46,"qpdf_alone":"Ok(Clean)","qpdf_ms":3,"check":"Ok(Clean)"}
+{"fixture":"security/pdf/launch-and-uri-actions.pdf","outcome":"neutralize","job":"rewritten, flagged","job_ms":42,"qpdf_alone":"Ok(Clean)","qpdf_ms":3,"check":"Ok(Clean)"}
+{"fixture":"security/pdf/stream-length-overflow.pdf","outcome":"repair","job":"repaired","job_ms":35,"qpdf_alone":"Ok(Repaired)","qpdf_ms":3,"check":"Ok(Repaired)"}
+{"fixture":"security/pdf/xref-prev-loop.pdf","outcome":"repair","job":"repaired","job_ms":35,"qpdf_alone":"Ok(Repaired)","qpdf_ms":5,"check":"Ok(Repaired)"}
+{"fixture":"valid/pdf/incremental-update.pdf","outcome":"accept","job":"rewritten","job_ms":33,"qpdf_alone":"Ok(Clean)","qpdf_ms":3,"check":"Ok(Clean)"}
+{"fixture":"valid/pdf/large-image.pdf","outcome":"accept","job":"rewritten","job_ms":414,"qpdf_alone":"Ok(Clean)","qpdf_ms":4,"check":"Ok(Clean)"}
+{"fixture":"valid/pdf/many-pages-200.pdf","outcome":"accept","job":"rewritten","job_ms":235,"qpdf_alone":"Ok(Clean)","qpdf_ms":78,"check":"Ok(Clean)"}
+{"fixture":"valid/pdf/one-page.pdf","outcome":"accept","job":"rewritten","job_ms":35,"qpdf_alone":"Ok(Clean)","qpdf_ms":3,"check":"Ok(Clean)"}
+{"fixture":"valid/pdf/two-pages-flate.pdf","outcome":"accept","job":"rewritten","job_ms":35,"qpdf_alone":"Ok(Clean)","qpdf_ms":3,"check":"Ok(Clean)"}
