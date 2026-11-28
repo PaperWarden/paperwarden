@@ -22,6 +22,6 @@ One line per corpus PDF:
 
 - `ios-simulator-arm64.jsonl`: an iPhone simulator in CI (`qpdf-ios` in
   `.github/workflows/ios.yml`, run 46140756287, artifact
-  `PW-012-ios-evidence`), release-mode test binary.
+  `PW-012-ios-evidence`), debug test binary.
 
 To reproduce, see "Reproducing" in `../../PW-012-qpdf.md`.
