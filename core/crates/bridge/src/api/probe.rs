@@ -80,6 +80,8 @@ pub enum BridgeErrorKind {
     Cancelled,
     /// A file could not be read.
     Unreadable,
+    /// The local database failed.
+    Storage,
 }
 
 impl BridgeError {

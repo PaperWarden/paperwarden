@@ -12,6 +12,9 @@ PaperWarden-operated service.
 - Temporary workspaces are isolated and removed after every terminal job state.
 - Local indexing is opt-in and can be cleared. The index stores search terms,
   never document text, and clearing it removes them from the database files.
+- Job history stays on the device. In Settings it can be turned off, kept
+  without file names (which also removes names already saved), or cleared at
+  any time; clearing removes it from the database files.
 - App data (settings, job history, the index) is excluded from cloud backup and
   device-to-device transfer.
 - Sanitization exports a new copy and provides a before/after report.

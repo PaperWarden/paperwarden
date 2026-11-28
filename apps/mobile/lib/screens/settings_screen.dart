@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app_info.dart';
+import '../history/history.dart';
 import '../theme/palette.dart';
 import '../theme/theme_mode_provider.dart';
 import '../theme/tokens.dart';
@@ -12,9 +13,10 @@ import 'privacy_policy_screen.dart';
 
 /// Settings tab.
 ///
-/// Only the theme, version and privacy policy work today. App Lock, export
-/// and storage settings are "Coming soon" until those features exist; Clear
-/// cache will call the core's workspace recovery once the bridge (#12) lands.
+/// The theme, the job history controls, the version and the privacy policy
+/// work today. App Lock, export and storage settings are "Coming soon" until
+/// those features exist; Clear cache will call the core's workspace recovery
+/// once that is exposed through the bridge.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -39,6 +41,8 @@ class SettingsScreen extends ConsumerWidget {
             comingSoon: true,
           ),
         ]),
+        const SectionHeading('History'),
+        const _HistorySettings(),
         const SectionHeading('Appearance'),
         GroupedList(children: [
           ListRow(
@@ -109,6 +113,98 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// The job history controls (ADR-0006). The core enforces them: with history
+/// off nothing is recorded, and with names off none is stored.
+class _HistorySettings extends ConsumerWidget {
+  const _HistorySettings();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final history = ref.watch(historyProvider);
+    final notifier = ref.read(historyProvider.notifier);
+    return switch (history) {
+      AsyncData(:final value) => GroupedList(children: [
+          ListRow(
+            title: 'Keep job history',
+            subtitle: 'Remember which tools you used and when, on this '
+                'device only.',
+            trailing: Switch(
+              value: value.enabled,
+              onChanged: notifier.setEnabled,
+            ),
+            onTap: () => notifier.setEnabled(!value.enabled),
+          ),
+          ListRow(
+            title: 'Include file names',
+            subtitle: 'Show which file each job used. Turning this off also '
+                'removes names already saved.',
+            trailing: Switch(
+              value: value.fileNames,
+              onChanged: value.enabled ? notifier.setFileNames : null,
+            ),
+            onTap: value.enabled
+                ? () => notifier.setFileNames(!value.fileNames)
+                : null,
+          ),
+          ListRow(
+            title: 'Clear history',
+            subtitle: switch (value.count) {
+              0 => 'No entries',
+              1 => '1 entry',
+              final count => '$count entries',
+            },
+            onTap: value.count == 0
+                ? null
+                : () => _confirmClear(context, notifier),
+          ),
+        ]),
+      AsyncError() => const GroupedList(children: [
+          ListRow(
+            title: 'Job history',
+            subtitle: 'History settings are unavailable right now.',
+          ),
+        ]),
+      _ => const GroupedList(children: [
+          ListRow(title: 'Job history', subtitle: 'Loading…'),
+        ]),
+    };
+  }
+
+  static Future<void> _confirmClear(
+    BuildContext context,
+    HistoryNotifier notifier,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Clear job history?'),
+        content: const Text(
+          'This removes every entry from this device for good.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      return;
+    }
+    await notifier.clear();
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Job history cleared')),
+      );
+    }
   }
 }
 

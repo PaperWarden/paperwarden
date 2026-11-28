@@ -5,6 +5,7 @@
 
 import 'api/document.dart';
 import 'api/probe.dart';
+import 'api/store.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
@@ -69,7 +70,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -1466635674;
+  int get rustContentHash => 809122902;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -81,6 +82,21 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
+  Future<void> crateApiStoreAppStoreClearHistory({required AppStore that});
+
+  Future<int> crateApiStoreAppStoreHistoryCount({required AppStore that});
+
+  Future<HistoryPrefs> crateApiStoreAppStoreHistoryPrefs(
+      {required AppStore that});
+
+  Future<AppStore> crateApiStoreAppStoreOpen({required String path});
+
+  Future<void> crateApiStoreAppStoreSetHistoryEnabled(
+      {required AppStore that, required bool enabled});
+
+  Future<void> crateApiStoreAppStoreSetHistoryFileNames(
+      {required AppStore that, required bool keep});
+
   void crateApiProbeCancelHandleCancel({required CancelHandle that});
 
   bool crateApiProbeCancelHandleIsCancelled({required CancelHandle that});
@@ -100,6 +116,14 @@ abstract class RustLibApi extends BaseApi {
   String crateApiProbeValidateJobId({required String id});
 
   RustArcIncrementStrongCountFnType
+      get rust_arc_increment_strong_count_AppStore;
+
+  RustArcDecrementStrongCountFnType
+      get rust_arc_decrement_strong_count_AppStore;
+
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_AppStorePtr;
+
+  RustArcIncrementStrongCountFnType
       get rust_arc_increment_strong_count_CancelHandle;
 
   RustArcDecrementStrongCountFnType
@@ -117,13 +141,173 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   });
 
   @override
+  Future<void> crateApiStoreAppStoreClearHistory({required AppStore that}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        final serializer = SseSerializer(generalizedFrbRustBinding);
+        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore(
+            that, serializer);
+        pdeCallFfi(generalizedFrbRustBinding, serializer,
+            funcId: 1, port: port_);
+      },
+      codec: SseCodec(
+        decodeSuccessData: sse_decode_unit,
+        decodeErrorData: sse_decode_bridge_error,
+      ),
+      constMeta: kCrateApiStoreAppStoreClearHistoryConstMeta,
+      argValues: [that],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiStoreAppStoreClearHistoryConstMeta =>
+      const TaskConstMeta(
+        debugName: "AppStore_clear_history",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<int> crateApiStoreAppStoreHistoryCount({required AppStore that}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        final serializer = SseSerializer(generalizedFrbRustBinding);
+        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore(
+            that, serializer);
+        pdeCallFfi(generalizedFrbRustBinding, serializer,
+            funcId: 2, port: port_);
+      },
+      codec: SseCodec(
+        decodeSuccessData: sse_decode_u_32,
+        decodeErrorData: sse_decode_bridge_error,
+      ),
+      constMeta: kCrateApiStoreAppStoreHistoryCountConstMeta,
+      argValues: [that],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiStoreAppStoreHistoryCountConstMeta =>
+      const TaskConstMeta(
+        debugName: "AppStore_history_count",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<HistoryPrefs> crateApiStoreAppStoreHistoryPrefs(
+      {required AppStore that}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        final serializer = SseSerializer(generalizedFrbRustBinding);
+        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore(
+            that, serializer);
+        pdeCallFfi(generalizedFrbRustBinding, serializer,
+            funcId: 3, port: port_);
+      },
+      codec: SseCodec(
+        decodeSuccessData: sse_decode_history_prefs,
+        decodeErrorData: sse_decode_bridge_error,
+      ),
+      constMeta: kCrateApiStoreAppStoreHistoryPrefsConstMeta,
+      argValues: [that],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiStoreAppStoreHistoryPrefsConstMeta =>
+      const TaskConstMeta(
+        debugName: "AppStore_history_prefs",
+        argNames: ["that"],
+      );
+
+  @override
+  Future<AppStore> crateApiStoreAppStoreOpen({required String path}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        final serializer = SseSerializer(generalizedFrbRustBinding);
+        sse_encode_String(path, serializer);
+        pdeCallFfi(generalizedFrbRustBinding, serializer,
+            funcId: 4, port: port_);
+      },
+      codec: SseCodec(
+        decodeSuccessData:
+            sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore,
+        decodeErrorData: sse_decode_bridge_error,
+      ),
+      constMeta: kCrateApiStoreAppStoreOpenConstMeta,
+      argValues: [path],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiStoreAppStoreOpenConstMeta => const TaskConstMeta(
+        debugName: "AppStore_open",
+        argNames: ["path"],
+      );
+
+  @override
+  Future<void> crateApiStoreAppStoreSetHistoryEnabled(
+      {required AppStore that, required bool enabled}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        final serializer = SseSerializer(generalizedFrbRustBinding);
+        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore(
+            that, serializer);
+        sse_encode_bool(enabled, serializer);
+        pdeCallFfi(generalizedFrbRustBinding, serializer,
+            funcId: 5, port: port_);
+      },
+      codec: SseCodec(
+        decodeSuccessData: sse_decode_unit,
+        decodeErrorData: sse_decode_bridge_error,
+      ),
+      constMeta: kCrateApiStoreAppStoreSetHistoryEnabledConstMeta,
+      argValues: [that, enabled],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiStoreAppStoreSetHistoryEnabledConstMeta =>
+      const TaskConstMeta(
+        debugName: "AppStore_set_history_enabled",
+        argNames: ["that", "enabled"],
+      );
+
+  @override
+  Future<void> crateApiStoreAppStoreSetHistoryFileNames(
+      {required AppStore that, required bool keep}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        final serializer = SseSerializer(generalizedFrbRustBinding);
+        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore(
+            that, serializer);
+        sse_encode_bool(keep, serializer);
+        pdeCallFfi(generalizedFrbRustBinding, serializer,
+            funcId: 6, port: port_);
+      },
+      codec: SseCodec(
+        decodeSuccessData: sse_decode_unit,
+        decodeErrorData: sse_decode_bridge_error,
+      ),
+      constMeta: kCrateApiStoreAppStoreSetHistoryFileNamesConstMeta,
+      argValues: [that, keep],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiStoreAppStoreSetHistoryFileNamesConstMeta =>
+      const TaskConstMeta(
+        debugName: "AppStore_set_history_file_names",
+        argNames: ["that", "keep"],
+      );
+
+  @override
   void crateApiProbeCancelHandleCancel({required CancelHandle that}) {
     return handler.executeSync(SyncTask(
       callFfi: () {
         final serializer = SseSerializer(generalizedFrbRustBinding);
         sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
             that, serializer);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 1)!;
+        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
       },
       codec: SseCodec(
         decodeSuccessData: sse_decode_unit,
@@ -148,7 +332,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         final serializer = SseSerializer(generalizedFrbRustBinding);
         sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
             that, serializer);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 2)!;
+        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8)!;
       },
       codec: SseCodec(
         decodeSuccessData: sse_decode_bool,
@@ -171,7 +355,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return handler.executeSync(SyncTask(
       callFfi: () {
         final serializer = SseSerializer(generalizedFrbRustBinding);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 3)!;
+        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 9)!;
       },
       codec: SseCodec(
         decodeSuccessData:
@@ -200,7 +384,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
             cancel, serializer);
         pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 4, port: port_);
+            funcId: 10, port: port_);
       },
       codec: SseCodec(
         decodeSuccessData: sse_decode_document_check,
@@ -222,7 +406,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return handler.executeSync(SyncTask(
       callFfi: () {
         final serializer = SseSerializer(generalizedFrbRustBinding);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 5)!;
+        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 11)!;
       },
       codec: SseCodec(
         decodeSuccessData: sse_decode_String,
@@ -252,7 +436,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
             cancel, serializer);
         pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 6, port: port_);
+            funcId: 12, port: port_);
       },
       codec: SseCodec(
         decodeSuccessData: sse_decode_u_32,
@@ -275,7 +459,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       callFfi: () {
         final serializer = SseSerializer(generalizedFrbRustBinding);
         sse_encode_String(id, serializer);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
+        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 13)!;
       },
       codec: SseCodec(
         decodeSuccessData: sse_decode_String,
@@ -293,12 +477,28 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   RustArcIncrementStrongCountFnType
+      get rust_arc_increment_strong_count_AppStore => wire
+          .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore;
+
+  RustArcDecrementStrongCountFnType
+      get rust_arc_decrement_strong_count_AppStore => wire
+          .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore;
+
+  RustArcIncrementStrongCountFnType
       get rust_arc_increment_strong_count_CancelHandle => wire
           .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle;
 
   RustArcDecrementStrongCountFnType
       get rust_arc_decrement_strong_count_CancelHandle => wire
           .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle;
+
+  @protected
+  AppStore
+      dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore(
+          dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return AppStoreImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
 
   @protected
   CancelHandle
@@ -309,11 +509,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  AppStore
+      dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore(
+          dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return AppStoreImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
   CancelHandle
       dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
           dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return CancelHandleImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  AppStore
+      dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore(
+          dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return AppStoreImpl.frbInternalDcoDecode(raw as List<dynamic>);
   }
 
   @protected
@@ -379,6 +595,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  HistoryPrefs dco_decode_history_prefs(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return HistoryPrefs(
+      enabled: dco_decode_bool(arr[0]),
+      fileNames: dco_decode_bool(arr[1]),
+    );
+  }
+
+  @protected
   int dco_decode_i_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
@@ -433,6 +661,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  AppStore
+      sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore(
+          SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return AppStoreImpl.frbInternalSseDecode(
+        sse_decode_usize(deserializer), sse_decode_i_32(deserializer));
+  }
+
+  @protected
   CancelHandle
       sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
           SseDeserializer deserializer) {
@@ -442,11 +679,29 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  AppStore
+      sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore(
+          SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return AppStoreImpl.frbInternalSseDecode(
+        sse_decode_usize(deserializer), sse_decode_i_32(deserializer));
+  }
+
+  @protected
   CancelHandle
       sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
           SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return CancelHandleImpl.frbInternalSseDecode(
+        sse_decode_usize(deserializer), sse_decode_i_32(deserializer));
+  }
+
+  @protected
+  AppStore
+      sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore(
+          SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return AppStoreImpl.frbInternalSseDecode(
         sse_decode_usize(deserializer), sse_decode_i_32(deserializer));
   }
 
@@ -507,6 +762,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     final inner = sse_decode_i_32(deserializer);
     return DocumentNotice.values[inner];
+  }
+
+  @protected
+  HistoryPrefs sse_decode_history_prefs(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    final var_enabled = sse_decode_bool(deserializer);
+    final var_fileNames = sse_decode_bool(deserializer);
+    return HistoryPrefs(enabled: var_enabled, fileNames: var_fileNames);
   }
 
   @protected
@@ -579,6 +842,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+      sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore(
+          AppStore self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+        (self as AppStoreImpl).frbInternalSseEncode(move: true), serializer);
+  }
+
+  @protected
+  void
       sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
           CancelHandle self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -589,12 +861,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   void
+      sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore(
+          AppStore self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+        (self as AppStoreImpl).frbInternalSseEncode(move: false), serializer);
+  }
+
+  @protected
+  void
       sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
           CancelHandle self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
         (self as CancelHandleImpl).frbInternalSseEncode(move: false),
         serializer);
+  }
+
+  @protected
+  void
+      sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerAppStore(
+          AppStore self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+        (self as AppStoreImpl).frbInternalSseEncode(move: null), serializer);
   }
 
   @protected
@@ -652,6 +942,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       DocumentNotice self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_history_prefs(HistoryPrefs self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_bool(self.enabled, serializer);
+    sse_encode_bool(self.fileNames, serializer);
   }
 
   @protected
@@ -717,6 +1014,73 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putBigUint64(self);
   }
+}
+
+@sealed
+class AppStoreImpl extends RustOpaque implements AppStore {
+  // Not to be used by end users
+  AppStoreImpl.frbInternalDcoDecode(List<dynamic> wire)
+      : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  AppStoreImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+      : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_AppStore,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_AppStore,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_AppStorePtr,
+  );
+
+  /// Deletes the whole job history, leaving no trace in the database files.
+  ///
+  /// # Errors
+  ///
+  /// [`BridgeErrorKind::Storage`] on a database error.
+  Future<void> clearHistory() =>
+      RustLib.instance.api.crateApiStoreAppStoreClearHistory(
+        that: this,
+      );
+
+  /// How many entries the job history holds.
+  ///
+  /// # Errors
+  ///
+  /// [`BridgeErrorKind::Storage`] on a database error.
+  Future<int> historyCount() =>
+      RustLib.instance.api.crateApiStoreAppStoreHistoryCount(
+        that: this,
+      );
+
+  /// How job history behaves now.
+  ///
+  /// # Errors
+  ///
+  /// [`BridgeErrorKind::Storage`] on a database error.
+  Future<HistoryPrefs> historyPrefs() =>
+      RustLib.instance.api.crateApiStoreAppStoreHistoryPrefs(
+        that: this,
+      );
+
+  /// Turns job history on or off. Existing entries stay until cleared.
+  ///
+  /// # Errors
+  ///
+  /// [`BridgeErrorKind::Storage`] on a database error.
+  Future<void> setHistoryEnabled({required bool enabled}) =>
+      RustLib.instance.api
+          .crateApiStoreAppStoreSetHistoryEnabled(that: this, enabled: enabled);
+
+  /// Keeps or hides file names. Hiding also removes existing names.
+  ///
+  /// # Errors
+  ///
+  /// [`BridgeErrorKind::Storage`] on a database error.
+  Future<void> setHistoryFileNames({required bool keep}) => RustLib.instance.api
+      .crateApiStoreAppStoreSetHistoryFileNames(that: this, keep: keep);
 }
 
 @sealed

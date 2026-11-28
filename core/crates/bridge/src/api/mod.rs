@@ -4,3 +4,4 @@
 
 pub mod document;
 pub mod probe;
+pub mod store;

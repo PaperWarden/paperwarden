@@ -20,6 +20,9 @@ crate-type = ["cdylib", "staticlib", "lib"]
 flutter_rust_bridge = { version = "=2.13.0", default-features = false, features = ["dart-opaque", "rust-async", "thread-pool"] }
 paperwarden-core = { path = "../.." }
 paperwarden-pdf-scan = { path = "../pdf-scan" }
+paperwarden-store = { path = "../store" }
+# Only to name SQLite's error code in bridge errors; the store owns SQLite.
+rusqlite = { version = "0.43.0", features = ["bundled"] }
 
 # The bridge cannot inherit the workspace's `unsafe_code = "forbid"`: the
 # generated FFI glue is unsafe by nature. Hand-written code here keeps the same

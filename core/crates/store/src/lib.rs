@@ -134,6 +134,19 @@ pub struct JobRecord {
     pub display_name: Option<String>,
 }
 
+/// How job history behaves (ADR-0006). Both are on unless the user turns
+/// them off.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct HistorySettings {
+    /// Whether finished jobs are recorded at all.
+    pub enabled: bool,
+    /// Whether entries keep the file name shown to the user.
+    pub file_names: bool,
+}
+
+const HISTORY_ENABLED: &str = "history.enabled";
+const HISTORY_FILE_NAMES: &str = "history.file-names";
+
 /// A search result.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SearchHit {
@@ -256,7 +269,61 @@ impl Store {
 
     // --- Job history -------------------------------------------------------
 
+    fn flag(&self, key: &str) -> Result<bool> {
+        Ok(self.setting(key)?.as_deref() != Some("off"))
+    }
+
+    fn set_flag(&self, key: &str, on: bool) -> Result<()> {
+        self.set_setting(key, if on { "on" } else { "off" })
+    }
+
+    /// How job history behaves.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error.
+    pub fn history_settings(&self) -> Result<HistorySettings> {
+        Ok(HistorySettings {
+            enabled: self.flag(HISTORY_ENABLED)?,
+            file_names: self.flag(HISTORY_FILE_NAMES)?,
+        })
+    }
+
+    /// Turns job history on or off. While it is off, [`record_job`]
+    /// records nothing; entries already there stay until
+    /// [`clear_job_history`].
+    ///
+    /// [`record_job`]: Self::record_job
+    /// [`clear_job_history`]: Self::clear_job_history
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error.
+    pub fn set_history_enabled(&mut self, enabled: bool) -> Result<()> {
+        self.set_flag(HISTORY_ENABLED, enabled)
+    }
+
+    /// Keeps or hides file names in job history. Hiding them also removes the
+    /// names from existing entries and purges them from the database files.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error.
+    pub fn set_history_file_names(&mut self, keep: bool) -> Result<()> {
+        self.set_flag(HISTORY_FILE_NAMES, keep)?;
+        if !keep {
+            self.connection
+                .execute("UPDATE job_history SET display_name = NULL", [])?;
+            self.purge()?;
+        }
+        Ok(())
+    }
+
     /// Records a finished job and drops entries beyond [`MAX_HISTORY_ENTRIES`].
+    ///
+    /// The user's [`HistorySettings`] apply here, in the core: with history
+    /// off nothing is written, and with file names hidden the entry has no
+    /// display name.
     ///
     /// # Errors
     ///
@@ -278,6 +345,11 @@ impl Store {
         if record.finished_at < record.started_at {
             return Err(StoreError::Invalid("job finished before it started"));
         }
+        let settings = self.history_settings()?;
+        if !settings.enabled {
+            return Ok(());
+        }
+        let display_name = record.display_name.as_ref().filter(|_| settings.file_names);
         let transaction = self.connection.transaction()?;
         transaction.execute(
             "INSERT INTO job_history (job_id, operation, outcome, started_at, finished_at, display_name)
@@ -288,7 +360,7 @@ impl Store {
                 record.outcome.as_str(),
                 record.started_at,
                 record.finished_at,
-                record.display_name,
+                display_name,
             ],
         )?;
         transaction.execute(

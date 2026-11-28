@@ -2,7 +2,9 @@
 
 #![cfg(test)]
 
-use paperwarden_store::{HistoryOutcome, JobRecord, Store, StoreError, MAX_HISTORY_ENTRIES};
+use paperwarden_store::{
+    HistoryOutcome, HistorySettings, JobRecord, Store, StoreError, MAX_HISTORY_ENTRIES,
+};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -140,6 +142,79 @@ fn clearing_history_leaves_no_trace_in_the_files() {
     assert!(
         !dir.contains(SENTINEL),
         "history survived in the database files"
+    );
+}
+
+#[test]
+fn history_is_on_and_keeps_names_by_default() {
+    let store = Store::open_in_memory().expect("open");
+    assert_eq!(
+        store.history_settings().expect("settings"),
+        HistorySettings {
+            enabled: true,
+            file_names: true
+        }
+    );
+}
+
+#[test]
+fn history_turned_off_records_nothing() {
+    let dir = TempDir::new("history-off");
+    let mut store = Store::open(&dir.db()).expect("open");
+    store.set_history_enabled(false).expect("turn off");
+    store
+        .record_job(&job(1, Some(&format!("{SENTINEL}-off.pdf"))))
+        .expect("record is accepted and ignored");
+    assert!(store.recent_jobs(10).expect("list").is_empty());
+    assert!(
+        !dir.contains(SENTINEL),
+        "a job was written with history off"
+    );
+
+    store.set_history_enabled(true).expect("turn on");
+    store.record_job(&job(2, None)).expect("record");
+    assert_eq!(store.recent_jobs(10).expect("list").len(), 1);
+}
+
+#[test]
+fn hiding_file_names_removes_them_now_and_from_new_entries() {
+    let dir = TempDir::new("history-names");
+    let mut store = Store::open(&dir.db()).expect("open");
+    store
+        .record_job(&job(1, Some(&format!("{SENTINEL}-before.pdf"))))
+        .expect("record");
+    assert!(dir.contains(SENTINEL), "test cannot see stored data");
+
+    store.set_history_file_names(false).expect("hide names");
+    assert!(
+        !dir.contains(SENTINEL),
+        "an existing name survived in the files"
+    );
+    store
+        .record_job(&job(2, Some(&format!("{SENTINEL}-after.pdf"))))
+        .expect("record");
+    assert!(!dir.contains(SENTINEL), "a new name was written");
+
+    let jobs = store.recent_jobs(10).expect("list");
+    assert_eq!(jobs.len(), 2, "the entries themselves are kept");
+    assert!(jobs.iter().all(|job| job.display_name.is_none()));
+}
+
+#[test]
+fn history_settings_persist() {
+    let dir = TempDir::new("history-persist");
+    {
+        let mut store = Store::open(&dir.db()).expect("open");
+        store.set_history_enabled(false).expect("off");
+        store.set_history_file_names(false).expect("hide");
+    }
+    let store = Store::open(&dir.db()).expect("reopen");
+    assert_eq!(
+        store.history_settings().expect("settings"),
+        HistorySettings {
+            enabled: false,
+            file_names: false
+        }
     );
 }
 

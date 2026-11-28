@@ -31,7 +31,9 @@ in CI for iOS.
   and the index are not exported.
 - **Job history keeps file names**, for usability. The user can:
   - turn history off entirely, so nothing new is recorded;
-  - hide file names, so new entries record no display name;
+  - hide file names, so new entries record no display name and the names
+    already saved are removed from every database file (decided
+    2026-11-28, #63);
   - clear existing history, which purges it from every database file.
 
 ## Consequences
