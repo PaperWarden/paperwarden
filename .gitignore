@@ -31,3 +31,4 @@ tmp/
 
 # PDFium builds fetched by scripts/fetch_pdfium.py (verified, not committed)
 /third_party/pdfium/
+/third_party/qpdf/
