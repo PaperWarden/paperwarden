@@ -7,6 +7,16 @@
 
 pub mod api;
 
+// The Android render service's JNI entry point (#59). `#[no_mangle]` and
+// taking ownership of file descriptors need `unsafe_code`; both are confined
+// to this one reviewed module.
+#[cfg(target_os = "android")]
+#[allow(
+    unsafe_code,
+    reason = "JNI export and file-descriptor ownership only; see the module's SAFETY comments"
+)]
+mod service_jni;
+
 // Generated FFI glue. It is unsafe by nature and does not follow the
 // hand-written lint policy, so the exceptions are scoped to this module only.
 #[allow(

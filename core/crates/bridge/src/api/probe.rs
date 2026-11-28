@@ -80,6 +80,12 @@ pub enum BridgeErrorKind {
     Cancelled,
     /// A file could not be read.
     Unreadable,
+    /// The document was refused: the pre-check or a job limit stopped it.
+    Refused,
+    /// The job exceeded its time limit.
+    TimedOut,
+    /// The engine failed, stopped, or produced output that did not verify.
+    EngineFailed,
 }
 
 impl BridgeError {

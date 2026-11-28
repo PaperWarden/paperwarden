@@ -40,7 +40,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1466635674;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -218294015;
 
 // Section: executor
 
@@ -254,6 +254,74 @@ fn wire__crate__api__probe__core_version_impl(
         },
     )
 }
+fn wire__crate__api__render__render_pdf_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "render_pdf",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_path = <String>::sse_decode(&mut deserializer);
+            let api_jobs_dir = <String>::sse_decode(&mut deserializer);
+            let api_destination = <String>::sse_decode(&mut deserializer);
+            let api_max_width = <u32>::sse_decode(&mut deserializer);
+            let api_max_height = <u32>::sse_decode(&mut deserializer);
+            let api_cancel = <RustOpaqueMoi<
+                flutter_rust_bridge::for_generated::RustAutoOpaqueInner<CancelHandle>,
+            >>::sse_decode(&mut deserializer);
+            let api_engine =
+                decode_DartFn_Inputs_engine_request_Output_engine_outcome_AnyhowException(
+                    <flutter_rust_bridge::DartOpaque>::sse_decode(&mut deserializer),
+                );
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, crate::api::probe::BridgeError>((move || {
+                    let mut api_cancel_guard = None;
+                    let decode_indices_ =
+                        flutter_rust_bridge::for_generated::lockable_compute_decode_order(vec![
+                            flutter_rust_bridge::for_generated::LockableOrderInfo::new(
+                                &api_cancel,
+                                0,
+                                false,
+                            ),
+                        ]);
+                    for i in decode_indices_ {
+                        match i {
+                            0 => api_cancel_guard = Some(api_cancel.lockable_decode_sync_ref()),
+                            _ => unreachable!(),
+                        }
+                    }
+                    let api_cancel_guard = api_cancel_guard.unwrap();
+                    let output_ok = crate::api::render::render_pdf(
+                        api_path,
+                        api_jobs_dir,
+                        api_destination,
+                        api_max_width,
+                        api_max_height,
+                        &*api_cancel_guard,
+                        api_engine,
+                    )?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__probe__run_probe_job_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -344,11 +412,58 @@ fn wire__crate__api__probe__validate_job_id_impl(
 
 // Section: related_funcs
 
+fn decode_DartFn_Inputs_engine_request_Output_engine_outcome_AnyhowException(
+    dart_opaque: flutter_rust_bridge::DartOpaque,
+) -> impl Fn(
+    crate::api::render::EngineRequest,
+) -> flutter_rust_bridge::DartFnFuture<crate::api::render::EngineOutcome> {
+    use flutter_rust_bridge::IntoDart;
+
+    async fn body(
+        dart_opaque: flutter_rust_bridge::DartOpaque,
+        arg0: crate::api::render::EngineRequest,
+    ) -> crate::api::render::EngineOutcome {
+        let args = vec![arg0.into_into_dart().into_dart()];
+        let message = FLUTTER_RUST_BRIDGE_HANDLER
+            .dart_fn_invoke(dart_opaque, args)
+            .await;
+
+        let mut deserializer = flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+        let action = deserializer.cursor.read_u8().unwrap();
+        let ans = match action {
+            0 => std::result::Result::Ok(<crate::api::render::EngineOutcome>::sse_decode(
+                &mut deserializer,
+            )),
+            1 => std::result::Result::Err(
+                <flutter_rust_bridge::for_generated::anyhow::Error>::sse_decode(&mut deserializer),
+            ),
+            _ => unreachable!(),
+        };
+        deserializer.end();
+        let ans = ans.expect("Dart throws exception but Rust side assume it is not failable");
+        ans
+    }
+
+    move |arg0: crate::api::render::EngineRequest| {
+        flutter_rust_bridge::for_generated::convert_into_dart_fn_future(body(
+            dart_opaque.clone(),
+            arg0,
+        ))
+    }
+}
 flutter_rust_bridge::frb_generated_moi_arc_impl_value!(
     flutter_rust_bridge::for_generated::RustAutoOpaqueInner<CancelHandle>
 );
 
 // Section: dart2rust
+
+impl SseDecode for flutter_rust_bridge::for_generated::anyhow::Error {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <String>::sse_decode(deserializer);
+        return flutter_rust_bridge::for_generated::anyhow::anyhow!("{}", inner);
+    }
+}
 
 impl SseDecode for CancelHandle {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -357,6 +472,14 @@ impl SseDecode for CancelHandle {
             flutter_rust_bridge::for_generated::RustAutoOpaqueInner<CancelHandle>,
         >>::sse_decode(deserializer);
         return flutter_rust_bridge::for_generated::rust_auto_opaque_decode_owned(inner);
+    }
+}
+
+impl SseDecode for flutter_rust_bridge::DartOpaque {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <usize>::sse_decode(deserializer);
+        return unsafe { flutter_rust_bridge::for_generated::sse_decode_dart_opaque(inner) };
     }
 }
 
@@ -405,6 +528,9 @@ impl SseDecode for crate::api::probe::BridgeErrorKind {
             0 => crate::api::probe::BridgeErrorKind::InvalidInput,
             1 => crate::api::probe::BridgeErrorKind::Cancelled,
             2 => crate::api::probe::BridgeErrorKind::Unreadable,
+            3 => crate::api::probe::BridgeErrorKind::Refused,
+            4 => crate::api::probe::BridgeErrorKind::TimedOut,
+            5 => crate::api::probe::BridgeErrorKind::EngineFailed,
             _ => unreachable!("Invalid variant for BridgeErrorKind: {}", inner),
         };
     }
@@ -443,10 +569,67 @@ impl SseDecode for crate::api::document::DocumentNotice {
     }
 }
 
+impl SseDecode for crate::api::render::EngineEnd {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::render::EngineEnd::Finished,
+            1 => crate::api::render::EngineEnd::TimedOut,
+            2 => crate::api::render::EngineEnd::Died,
+            3 => crate::api::render::EngineEnd::Unavailable,
+            _ => unreachable!("Invalid variant for EngineEnd: {}", inner),
+        };
+    }
+}
+
+impl SseDecode for crate::api::render::EngineOutcome {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_end = <crate::api::render::EngineEnd>::sse_decode(deserializer);
+        let mut var_status = <i32>::sse_decode(deserializer);
+        return crate::api::render::EngineOutcome {
+            end: var_end,
+            status: var_status,
+        };
+    }
+}
+
+impl SseDecode for crate::api::render::EngineRequest {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_input = <String>::sse_decode(deserializer);
+        let mut var_output = <String>::sse_decode(deserializer);
+        let mut var_maxWidth = <u32>::sse_decode(deserializer);
+        let mut var_maxHeight = <u32>::sse_decode(deserializer);
+        let mut var_maxInputBytes = <u64>::sse_decode(deserializer);
+        let mut var_maxOutputBytes = <u64>::sse_decode(deserializer);
+        let mut var_timeLimitMs = <u64>::sse_decode(deserializer);
+        let mut var_memoryBudgetBytes = <u64>::sse_decode(deserializer);
+        return crate::api::render::EngineRequest {
+            input: var_input,
+            output: var_output,
+            max_width: var_maxWidth,
+            max_height: var_maxHeight,
+            max_input_bytes: var_maxInputBytes,
+            max_output_bytes: var_maxOutputBytes,
+            time_limit_ms: var_timeLimitMs,
+            memory_budget_bytes: var_memoryBudgetBytes,
+        };
+    }
+}
+
 impl SseDecode for i32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         deserializer.cursor.read_i32::<NativeEndian>().unwrap()
+    }
+}
+
+impl SseDecode for isize {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_i64::<NativeEndian>().unwrap() as _
     }
 }
 
@@ -508,10 +691,29 @@ impl SseDecode for crate::api::document::RefusalReason {
     }
 }
 
+impl SseDecode for crate::api::render::RenderedPdf {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_bytes = <u64>::sse_decode(deserializer);
+        let mut var_notices = <Vec<crate::api::document::DocumentNotice>>::sse_decode(deserializer);
+        return crate::api::render::RenderedPdf {
+            bytes: var_bytes,
+            notices: var_notices,
+        };
+    }
+}
+
 impl SseDecode for u32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         deserializer.cursor.read_u32::<NativeEndian>().unwrap()
+    }
+}
+
+impl SseDecode for u64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_u64::<NativeEndian>().unwrap()
     }
 }
 
@@ -544,7 +746,8 @@ fn pde_ffi_dispatcher_primary_impl(
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
         4 => wire__crate__api__document__check_pdf_impl(port, ptr, rust_vec_len, data_len),
-        6 => wire__crate__api__probe__run_probe_job_impl(port, ptr, rust_vec_len, data_len),
+        6 => wire__crate__api__render__render_pdf_impl(port, ptr, rust_vec_len, data_len),
+        7 => wire__crate__api__probe__run_probe_job_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -561,7 +764,7 @@ fn pde_ffi_dispatcher_sync_impl(
         2 => wire__crate__api__probe__CancelHandle_is_cancelled_impl(ptr, rust_vec_len, data_len),
         3 => wire__crate__api__probe__CancelHandle_new_impl(ptr, rust_vec_len, data_len),
         5 => wire__crate__api__probe__core_version_impl(ptr, rust_vec_len, data_len),
-        7 => wire__crate__api__probe__validate_job_id_impl(ptr, rust_vec_len, data_len),
+        8 => wire__crate__api__probe__validate_job_id_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -611,6 +814,9 @@ impl flutter_rust_bridge::IntoDart for crate::api::probe::BridgeErrorKind {
             Self::InvalidInput => 0.into_dart(),
             Self::Cancelled => 1.into_dart(),
             Self::Unreadable => 2.into_dart(),
+            Self::Refused => 3.into_dart(),
+            Self::TimedOut => 4.into_dart(),
+            Self::EngineFailed => 5.into_dart(),
             _ => unreachable!(),
         }
     }
@@ -677,6 +883,74 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::document::DocumentNotice>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::render::EngineEnd {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Finished => 0.into_dart(),
+            Self::TimedOut => 1.into_dart(),
+            Self::Died => 2.into_dart(),
+            Self::Unavailable => 3.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::render::EngineEnd {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::render::EngineEnd>
+    for crate::api::render::EngineEnd
+{
+    fn into_into_dart(self) -> crate::api::render::EngineEnd {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::render::EngineOutcome {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.end.into_into_dart().into_dart(),
+            self.status.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::render::EngineOutcome
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::render::EngineOutcome>
+    for crate::api::render::EngineOutcome
+{
+    fn into_into_dart(self) -> crate::api::render::EngineOutcome {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::render::EngineRequest {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.input.into_into_dart().into_dart(),
+            self.output.into_into_dart().into_dart(),
+            self.max_width.into_into_dart().into_dart(),
+            self.max_height.into_into_dart().into_dart(),
+            self.max_input_bytes.into_into_dart().into_dart(),
+            self.max_output_bytes.into_into_dart().into_dart(),
+            self.time_limit_ms.into_into_dart().into_dart(),
+            self.memory_budget_bytes.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::render::EngineRequest
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::render::EngineRequest>
+    for crate::api::render::EngineRequest
+{
+    fn into_into_dart(self) -> crate::api::render::EngineRequest {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::document::RefusalReason {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         match self {
@@ -704,11 +978,46 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::document::RefusalReason>
         self
     }
 }
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::render::RenderedPdf {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.bytes.into_into_dart().into_dart(),
+            self.notices.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::render::RenderedPdf
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::render::RenderedPdf>
+    for crate::api::render::RenderedPdf
+{
+    fn into_into_dart(self) -> crate::api::render::RenderedPdf {
+        self
+    }
+}
+
+impl SseEncode for flutter_rust_bridge::for_generated::anyhow::Error {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(format!("{:?}", self), serializer);
+    }
+}
 
 impl SseEncode for CancelHandle {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<CancelHandle>>>::sse_encode(flutter_rust_bridge::for_generated::rust_auto_opaque_encode::<_, MoiArc<_>>(self), serializer);
+    }
+}
+
+impl SseEncode for flutter_rust_bridge::DartOpaque {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <usize>::sse_encode(self.encode(), serializer);
     }
 }
 
@@ -753,6 +1062,9 @@ impl SseEncode for crate::api::probe::BridgeErrorKind {
                 crate::api::probe::BridgeErrorKind::InvalidInput => 0,
                 crate::api::probe::BridgeErrorKind::Cancelled => 1,
                 crate::api::probe::BridgeErrorKind::Unreadable => 2,
+                crate::api::probe::BridgeErrorKind::Refused => 3,
+                crate::api::probe::BridgeErrorKind::TimedOut => 4,
+                crate::api::probe::BridgeErrorKind::EngineFailed => 5,
                 _ => {
                     unimplemented!("");
                 }
@@ -794,10 +1106,60 @@ impl SseEncode for crate::api::document::DocumentNotice {
     }
 }
 
+impl SseEncode for crate::api::render::EngineEnd {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::render::EngineEnd::Finished => 0,
+                crate::api::render::EngineEnd::TimedOut => 1,
+                crate::api::render::EngineEnd::Died => 2,
+                crate::api::render::EngineEnd::Unavailable => 3,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::api::render::EngineOutcome {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::api::render::EngineEnd>::sse_encode(self.end, serializer);
+        <i32>::sse_encode(self.status, serializer);
+    }
+}
+
+impl SseEncode for crate::api::render::EngineRequest {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.input, serializer);
+        <String>::sse_encode(self.output, serializer);
+        <u32>::sse_encode(self.max_width, serializer);
+        <u32>::sse_encode(self.max_height, serializer);
+        <u64>::sse_encode(self.max_input_bytes, serializer);
+        <u64>::sse_encode(self.max_output_bytes, serializer);
+        <u64>::sse_encode(self.time_limit_ms, serializer);
+        <u64>::sse_encode(self.memory_budget_bytes, serializer);
+    }
+}
+
 impl SseEncode for i32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         serializer.cursor.write_i32::<NativeEndian>(self).unwrap();
+    }
+}
+
+impl SseEncode for isize {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer
+            .cursor
+            .write_i64::<NativeEndian>(self as _)
+            .unwrap();
     }
 }
 
@@ -854,10 +1216,25 @@ impl SseEncode for crate::api::document::RefusalReason {
     }
 }
 
+impl SseEncode for crate::api::render::RenderedPdf {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u64>::sse_encode(self.bytes, serializer);
+        <Vec<crate::api::document::DocumentNotice>>::sse_encode(self.notices, serializer);
+    }
+}
+
 impl SseEncode for u32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         serializer.cursor.write_u32::<NativeEndian>(self).unwrap();
+    }
+}
+
+impl SseEncode for u64 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_u64::<NativeEndian>(self).unwrap();
     }
 }
 

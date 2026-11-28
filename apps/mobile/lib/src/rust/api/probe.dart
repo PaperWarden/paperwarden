@@ -87,5 +87,14 @@ enum BridgeErrorKind {
 
   /// A file could not be read.
   unreadable,
+
+  /// The document was refused: the pre-check or a job limit stopped it.
+  refused,
+
+  /// The job exceeded its time limit.
+  timedOut,
+
+  /// The engine failed, stopped, or produced output that did not verify.
+  engineFailed,
   ;
 }

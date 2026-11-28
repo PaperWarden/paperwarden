@@ -8,6 +8,7 @@
 
 import 'api/document.dart';
 import 'api/probe.dart';
+import 'api/render.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
@@ -26,6 +27,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
           .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle;
 
   @protected
+  AnyhowException dco_decode_AnyhowException(dynamic raw);
+
+  @protected
   CancelHandle
       dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
           dynamic raw);
@@ -34,6 +38,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   CancelHandle
       dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
           dynamic raw);
+
+  @protected
+  FutureOr<EngineOutcome> Function(EngineRequest)
+      dco_decode_DartFn_Inputs_engine_request_Output_engine_outcome_AnyhowException(
+          dynamic raw);
+
+  @protected
+  Object dco_decode_DartOpaque(dynamic raw);
 
   @protected
   CancelHandle
@@ -62,7 +74,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   DocumentNotice dco_decode_document_notice(dynamic raw);
 
   @protected
+  EngineEnd dco_decode_engine_end(dynamic raw);
+
+  @protected
+  EngineOutcome dco_decode_engine_outcome(dynamic raw);
+
+  @protected
+  EngineRequest dco_decode_engine_request(dynamic raw);
+
+  @protected
   int dco_decode_i_32(dynamic raw);
+
+  @protected
+  PlatformInt64 dco_decode_isize(dynamic raw);
 
   @protected
   List<DocumentNotice> dco_decode_list_document_notice(dynamic raw);
@@ -77,7 +101,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   RefusalReason dco_decode_refusal_reason(dynamic raw);
 
   @protected
+  RenderedPdf dco_decode_rendered_pdf(dynamic raw);
+
+  @protected
   int dco_decode_u_32(dynamic raw);
+
+  @protected
+  BigInt dco_decode_u_64(dynamic raw);
 
   @protected
   int dco_decode_u_8(dynamic raw);
@@ -89,6 +119,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   BigInt dco_decode_usize(dynamic raw);
 
   @protected
+  AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer);
+
+  @protected
   CancelHandle
       sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
           SseDeserializer deserializer);
@@ -97,6 +130,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   CancelHandle
       sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
           SseDeserializer deserializer);
+
+  @protected
+  Object sse_decode_DartOpaque(SseDeserializer deserializer);
 
   @protected
   CancelHandle
@@ -126,7 +162,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   DocumentNotice sse_decode_document_notice(SseDeserializer deserializer);
 
   @protected
+  EngineEnd sse_decode_engine_end(SseDeserializer deserializer);
+
+  @protected
+  EngineOutcome sse_decode_engine_outcome(SseDeserializer deserializer);
+
+  @protected
+  EngineRequest sse_decode_engine_request(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer);
+
+  @protected
+  PlatformInt64 sse_decode_isize(SseDeserializer deserializer);
 
   @protected
   List<DocumentNotice> sse_decode_list_document_notice(
@@ -143,7 +191,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   RefusalReason sse_decode_refusal_reason(SseDeserializer deserializer);
 
   @protected
+  RenderedPdf sse_decode_rendered_pdf(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_u_32(SseDeserializer deserializer);
+
+  @protected
+  BigInt sse_decode_u_64(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_8(SseDeserializer deserializer);
@@ -155,6 +209,10 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   BigInt sse_decode_usize(SseDeserializer deserializer);
 
   @protected
+  void sse_encode_AnyhowException(
+      AnyhowException self, SseSerializer serializer);
+
+  @protected
   void
       sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
           CancelHandle self, SseSerializer serializer);
@@ -163,6 +221,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void
       sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
           CancelHandle self, SseSerializer serializer);
+
+  @protected
+  void
+      sse_encode_DartFn_Inputs_engine_request_Output_engine_outcome_AnyhowException(
+          FutureOr<EngineOutcome> Function(EngineRequest) self,
+          SseSerializer serializer);
+
+  @protected
+  void sse_encode_DartOpaque(Object self, SseSerializer serializer);
 
   @protected
   void
@@ -194,7 +261,19 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
       DocumentNotice self, SseSerializer serializer);
 
   @protected
+  void sse_encode_engine_end(EngineEnd self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_engine_outcome(EngineOutcome self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_engine_request(EngineRequest self, SseSerializer serializer);
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_isize(PlatformInt64 self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_document_notice(
@@ -212,7 +291,13 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_refusal_reason(RefusalReason self, SseSerializer serializer);
 
   @protected
+  void sse_encode_rendered_pdf(RenderedPdf self, SseSerializer serializer);
+
+  @protected
   void sse_encode_u_32(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_u_64(BigInt self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_8(int self, SseSerializer serializer);
