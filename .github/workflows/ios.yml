@@ -7,6 +7,7 @@ on:
       - "core/**"
       - ".github/workflows/ios.yml"
       - "scripts/fetch_pdfium.py"
+      - "scripts/fetch_qpdf.py"
       - "tests/corpus/**"
   push:
     branches: [main]
@@ -15,6 +16,7 @@ on:
       - "core/**"
       - ".github/workflows/ios.yml"
       - "scripts/fetch_pdfium.py"
+      - "scripts/fetch_qpdf.py"
       - "tests/corpus/**"
 
 permissions:
@@ -157,4 +159,65 @@ jobs:
         with:
           name: PW-011-ios-evidence
           path: ${{ github.workspace }}/evidence/PW-011
+          retention-days: 14
+
+  # qpdf on iOS (PW-012): built from the pinned upstream sources for devices
+  # and the simulator, and its tests run on an iOS simulator.
+  qpdf-ios:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    defaults:
+      run: {working-directory: core, shell: bash}
+    env:
+      EVIDENCE: ${{ github.workspace }}/evidence/PW-012
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable action
+        with:
+          toolchain: "1.98.0"
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+      - name: Fetch the pinned, verified qpdf, zlib and libjpeg sources
+        run: |
+          python3 ../scripts/fetch_qpdf.py
+          mkdir -p "$EVIDENCE"
+      - name: qpdf builds for iOS devices and imports no network API
+        run: |
+          cargo build -p paperwarden-qpdf --release --locked --target aarch64-apple-ios --example qpdf_probe
+          probe=target/aarch64-apple-ios/release/examples/qpdf_probe
+          strip -o "$RUNNER_TEMP/probe" "$probe"
+          {
+            echo "## Size in bytes (stripped, gzip -9)"
+            stat -f %z "$RUNNER_TEMP/probe"; gzip -9 -c "$RUNNER_TEMP/probe" | wc -c
+            echo "## Linked libraries"; otool -L "$probe"
+          } | tee "$EVIDENCE/ios-packaging.txt"
+          nm -u "$probe" | sed 's/^ *U //' > "$EVIDENCE/ios-imports.txt"
+          if grep -E '^_(socket|connect|getaddrinfo|gethostbyname|CFSocket|CFStream|CFHTTP|nw_|SCNetwork)' "$EVIDENCE/ios-imports.txt"; then
+            echo "qpdf imports a network API" >&2; exit 1
+          fi
+      - name: Boot an iOS simulator
+        run: |
+          udid=$(xcrun simctl list devices available --json | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          print(next(d["udid"] for runtime, ds in sorted(devices.items(), reverse=True)
+                     if "iOS" in runtime for d in ds if d["name"].startswith("iPhone")))')
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl list devices booted | tee "$EVIDENCE/simulator.txt"
+      - name: qpdf transforms and encrypts the corpus on the iOS simulator
+        env:
+          CARGO_TARGET_AARCH64_APPLE_IOS_SIM_RUNNER: xcrun simctl spawn booted
+          SIMCTL_CHILD_PAPERWARDEN_CORPUS: ${{ github.workspace }}/tests/corpus
+          SIMCTL_CHILD_PAPERWARDEN_EVIDENCE: ${{ github.workspace }}/evidence/PW-012/ios-simulator-arm64.jsonl
+          SIMCTL_CHILD_TMPDIR: ${{ runner.temp }}
+        run: |
+          cargo test -p paperwarden-qpdf --locked --target aarch64-apple-ios-sim --test qpdf -- --include-ignored 2>&1 | tee "$EVIDENCE/ios-simulator-tests.txt"
+          # The spawned tests must have run and passed.
+          grep -q 'test result: ok. 5 passed' "$EVIDENCE/ios-simulator-tests.txt"
+          test "$(wc -l < "$EVIDENCE/ios-simulator-arm64.jsonl")" -eq 16
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: PW-012-ios-evidence
+          path: ${{ github.workspace }}/evidence/PW-012
           retention-days: 14

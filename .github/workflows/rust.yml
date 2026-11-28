@@ -21,6 +21,47 @@ jobs:
       - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - run: cargo test --workspace --all-features --locked
 
+  # qpdf tests are ignored by default because they need qpdf built in. Fetch
+  # the pinned, verified upstream sources, then build and test it on Linux
+  # and cross-build it for Android (PW-012).
+  qpdf:
+    runs-on: ubuntu-latest
+    defaults:
+      run: {working-directory: core}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable action
+        with:
+          toolchain: "1.98.0"
+          components: clippy
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+      - name: The qpdf fetch speaks only HTTPS and checks every digest
+        run: python3 -m unittest discover -s ../tests/scripts -p test_fetch_qpdf.py -v
+      - run: python3 ../scripts/fetch_qpdf.py
+      - name: Clippy with qpdf built in
+        run: cargo clippy -p paperwarden-qpdf --all-targets --locked -- -D warnings
+      - name: qpdf transforms and encrypts the corpus
+        env:
+          PAPERWARDEN_EVIDENCE: ${{ runner.temp }}/qpdf-linux-x64.jsonl
+        run: |
+          cargo test -p paperwarden-qpdf --locked -- --include-ignored
+          cat "$PAPERWARDEN_EVIDENCE"
+      - name: qpdf cross-builds for Android, with libc++ linked statically
+        run: |
+          bin="$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          for pair in aarch64-linux-android:aarch64-linux-android24 armv7-linux-androideabi:armv7a-linux-androideabi24 x86_64-linux-android:x86_64-linux-android24; do
+            target="${pair%%:*}"; clang="$bin/${pair##*:}-clang"
+            var=$(echo "$target" | tr 'a-z-' 'A-Z_')
+            env "CC_${target//-/_}=$clang" "CXX_${target//-/_}=$clang++" "AR_${target//-/_}=$bin/llvm-ar" "CARGO_TARGET_${var}_LINKER=$clang" cargo build -p paperwarden-qpdf --release --locked --target "$target" --example qpdf_probe
+            probe="target/$target/release/examples/qpdf_probe"
+            "$bin/llvm-strip" -o "$RUNNER_TEMP/probe" "$probe"
+            echo "$target: $(stat -c %s "$RUNNER_TEMP/probe") bytes stripped, $(gzip -9 -c "$RUNNER_TEMP/probe" | wc -c) gzip -9"
+            # libc++ is linked in, never needed as libc++_shared.so.
+            if "$bin/llvm-readelf" -d "$probe" | grep -q 'libc++_shared'; then
+              echo "qpdf_probe needs libc++_shared.so" >&2; exit 1
+            fi
+          done
+
   # PDFium tests are ignored by default because they need the library. Fetch
   # the pinned, verified Linux build and run them (PW-010).
   pdfium:
