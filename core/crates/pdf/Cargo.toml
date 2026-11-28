@@ -15,6 +15,11 @@ paperwarden-core = { path = "../.." }
 paperwarden-pdf-scan = { path = "../pdf-scan" }
 pdfium-render = { version = "0.9.6", default-features = false, features = ["pdfium_8125", "thread_safe"] }
 
+# The service process confines itself (src/service.rs, #59): an address-space
+# ceiling and a SIGKILL watchdog, through nix's safe wrappers.
+[target.'cfg(any(target_os = "android", target_os = "linux"))'.dependencies]
+nix = { version = "0.32", default-features = false, features = ["resource", "signal"] }
+
 # Peak memory for the probe on Apple platforms, which have no /proc
 # (getrusage through a safe wrapper; the workspace forbids unsafe code).
 [target.'cfg(target_vendor = "apple")'.dev-dependencies]
