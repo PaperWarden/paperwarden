@@ -123,7 +123,7 @@ fn every_corpus_pdf_meets_its_outcome_through_a_qpdf_job() {
         let direct = transform(&input, &dir.join("direct.pdf"), &Transform::Rewrite);
         let direct_ms = started.elapsed().as_millis();
         let _ = fs::remove_file(dir.join("direct.pdf"));
-        let checked = check(&input, "");
+        let checked = check(&input, None);
 
         let result = match &job {
             Ok(notices) if notices.contains(&Notice::Repaired) => "repaired".to_owned(),
@@ -165,7 +165,7 @@ fn pages_are_rotated_extracted_and_merged() {
     let dir = scratch("pages");
     let jobs = dir.join("jobs");
     let many = corpus("valid/pdf/many-pages-200.pdf");
-    assert_eq!(page_count(&many, ""), Ok(200));
+    assert_eq!(page_count(&many, None), Ok(200));
 
     let extracted = dir.join("extracted.pdf");
     let range = PageRange {
@@ -179,7 +179,7 @@ fn pages_are_rotated_extracted_and_merged() {
         &extracted,
     )
     .unwrap();
-    assert_eq!(page_count(&extracted, ""), Ok(3));
+    assert_eq!(page_count(&extracted, None), Ok(3));
 
     let rotated = dir.join("rotated.pdf");
     let rotate = Transform::Rotate {
@@ -187,7 +187,7 @@ fn pages_are_rotated_extracted_and_merged() {
         pages: PageRange::ALL,
     };
     run_job(&extracted, rotate, &jobs, &rotated).unwrap();
-    assert_eq!(page_count(&rotated, ""), Ok(3));
+    assert_eq!(page_count(&rotated, None), Ok(3));
     let bytes = fs::read(&rotated).unwrap();
     assert_eq!(
         bytes.windows(10).filter(|w| w == b"/Rotate 90").count(),
@@ -204,7 +204,7 @@ fn pages_are_rotated_extracted_and_merged() {
         &Transform::Merge { others },
     );
     assert!(outcome.is_ok(), "{outcome:?}");
-    assert_eq!(page_count(&merged, ""), Ok(3));
+    assert_eq!(page_count(&merged, None), Ok(3));
 
     // A range past the end is refused before qpdf writes anything.
     let past = Transform::Extract {
@@ -227,9 +227,13 @@ fn encryption_round_trips_and_needs_the_password() {
     let jobs = dir.join("jobs");
     let original = corpus("valid/pdf/two-pages-flate.pdf");
     let encrypted = dir.join("encrypted.pdf");
+    // Passwords made at run time, never written into the test.
+    let user = format!("user-{:x}", std::process::id() ^ 0x5a5a);
+    let owner = format!("owner-{:x}", std::process::id() ^ 0xa5a5);
+    let wrong = format!("not-{user}");
     let encrypt = Transform::Encrypt {
-        user: "correct horse".into(),
-        owner: "battery staple".into(),
+        user: user.clone(),
+        owner: owner.clone(),
     };
     run_job(&original, encrypt, &jobs, &encrypted).unwrap();
 
@@ -237,33 +241,33 @@ fn encryption_round_trips_and_needs_the_password() {
     let bytes = fs::read(&encrypted).unwrap();
     assert!(bytes.windows(4).any(|w| w == b"/R 6"), "revision 6");
     assert!(bytes.windows(6).any(|w| w == b"/AESV3"), "AES-256");
-    assert_eq!(page_count(&encrypted, ""), Err(QpdfError::Failed));
-    assert_eq!(page_count(&encrypted, "wrong"), Err(QpdfError::Failed));
-    assert_eq!(page_count(&encrypted, "correct horse"), Ok(2));
-    assert_eq!(page_count(&encrypted, "battery staple"), Ok(2));
+    assert_eq!(page_count(&encrypted, None), Err(QpdfError::Failed));
+    assert_eq!(page_count(&encrypted, Some(&wrong)), Err(QpdfError::Failed));
+    assert_eq!(page_count(&encrypted, Some(&user)), Ok(2));
+    assert_eq!(page_count(&encrypted, Some(&owner)), Ok(2));
     // PaperWarden's pre-check cannot measure it without the password.
     assert!(matches!(
         scan(&bytes, &ScanLimits::default(), &mut || Ok(())),
         Err(ScanError::Encrypted)
     ));
 
-    let wrong = Transform::Decrypt {
-        password: "wrong".into(),
+    let mistaken = Transform::Decrypt {
+        password: wrong.clone(),
     };
-    assert!(run_job(&encrypted, wrong, &jobs, &dir.join("wrong.pdf")).is_err());
+    assert!(run_job(&encrypted, mistaken, &jobs, &dir.join("wrong.pdf")).is_err());
     assert!(!dir.join("wrong.pdf").exists());
 
     let decrypted = dir.join("decrypted.pdf");
     let decrypt = Transform::Decrypt {
-        password: "correct horse".into(),
+        password: user.clone(),
     };
     run_job(&encrypted, decrypt, &jobs, &decrypted).unwrap();
-    assert_eq!(page_count(&decrypted, ""), Ok(2));
+    assert_eq!(page_count(&decrypted, None), Ok(2));
     let plain = fs::read(&decrypted).unwrap();
     assert!(!plain.windows(8).any(|w| w == b"/Encrypt"));
     assert!(scan(&plain, &ScanLimits::default(), &mut || Ok(())).is_ok());
     // The password never reaches the output.
-    assert!(!plain.windows(13).any(|w| w == b"correct horse"));
+    assert!(!plain.windows(user.len()).any(|w| w == user.as_bytes()));
     no_workspace(&jobs);
     fs::remove_dir_all(&dir).unwrap();
 }
@@ -298,7 +302,7 @@ fn malformed_input_is_a_typed_error_and_never_writes_an_output() {
         match result {
             Err(QpdfError::Failed) => {}
             // qpdf may recover a cut file; what it writes must then open.
-            Ok(_) => assert!(page_count(&output, "").is_ok(), "{name}"),
+            Ok(_) => assert!(page_count(&output, None).is_ok(), "{name}"),
             Err(other) => panic!("{name}: {other:?}"),
         }
     }

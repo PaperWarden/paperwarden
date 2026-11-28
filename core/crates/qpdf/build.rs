@@ -234,6 +234,15 @@ fn main() {
     fs::write(config.join("jconfig.h"), JCONFIG).unwrap_or_else(|e| panic!("write jconfig.h: {e}"));
 
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    // The C and C++ here must target the same iOS release as the Rust that
+    // links them; left to itself cc targets the SDK's newest, and the link
+    // then fails on symbols such as ___chkstk_darwin. Xcode (and so Cargokit)
+    // sets this for app builds; elsewhere it must be set to the app's
+    // minimum, iOS 17 (ADR-0007).
+    println!("cargo:rerun-if-env-changed=IPHONEOS_DEPLOYMENT_TARGET");
+    if target_os == "ios" && env::var_os("IPHONEOS_DEPLOYMENT_TARGET").is_none() {
+        panic!("set IPHONEOS_DEPLOYMENT_TARGET=17.0 to build qpdf for iOS (ADR-0007)");
+    }
     let msvc = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default() == "msvc";
 
     compile_c("pw_zlib", &src.join("zlib"), ZLIB, &[&config]);

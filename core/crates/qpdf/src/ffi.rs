@@ -115,9 +115,10 @@ pub(crate) fn run_job(json: &CStr) -> Option<c_int> {
     Some(unsafe { qpdfjob_run(job.0) })
 }
 
-/// The number of pages in the PDF at `path`, opened with `password`, or
-/// `None` if qpdf cannot open it.
-pub(crate) fn page_count(path: &CStr, password: &CStr) -> Option<u32> {
+/// The number of pages in the PDF at `path`, opened with `password` (none:
+/// a null pointer, which qpdf reads as no password), or `None` if qpdf
+/// cannot open it.
+pub(crate) fn page_count(path: &CStr, password: Option<&CStr>) -> Option<u32> {
     // SAFETY: qpdf_init has no preconditions.
     let document = Document(unsafe { qpdf_init() });
     if document.0.is_null() {
@@ -127,7 +128,8 @@ pub(crate) fn page_count(path: &CStr, password: &CStr) -> Option<u32> {
     unsafe {
         qpdf_silence_errors(document.0);
         qpdf_set_suppress_warnings(document.0, QPDF_TRUE);
-        let read = qpdf_read(document.0, path.as_ptr(), password.as_ptr());
+        let password = password.map_or(std::ptr::null(), CStr::as_ptr);
+        let read = qpdf_read(document.0, path.as_ptr(), password);
         let pages = qpdf_get_num_pages(document.0);
         // Collect any error, so qpdf_cleanup has none left to report.
         let _ = qpdf_get_error(document.0);

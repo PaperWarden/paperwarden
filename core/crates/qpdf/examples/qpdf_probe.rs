@@ -27,7 +27,7 @@ fn main() {
     let output = args.get(3).map(Path::new);
     let started = Instant::now();
     let result = match (operation.as_str(), output) {
-        ("pages", _) => format!("{:?}", page_count(input, "")),
+        ("pages", _) => format!("{:?}", page_count(input, None)),
         ("rewrite", Some(output)) => format!("{:?}", transform(input, output, &Transform::Rewrite)),
         ("rotate", Some(output)) => {
             let rotate = Transform::Rotate {
@@ -37,9 +37,14 @@ fn main() {
             format!("{:?}", transform(input, output, &rotate))
         }
         ("encrypt", Some(output)) => {
+            // A throwaway owner password, different on every run.
+            let owner = format!(
+                "{:x}",
+                started.elapsed().as_nanos() ^ u128::from(std::process::id())
+            );
             let encrypt = Transform::Encrypt {
                 user: String::new(),
-                owner: "probe-owner".to_owned(),
+                owner,
             };
             format!("{:?}", transform(input, output, &encrypt))
         }

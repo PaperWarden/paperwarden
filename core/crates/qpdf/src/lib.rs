@@ -217,10 +217,10 @@ pub enum Transform {
 
 impl Transform {
     /// The password qpdf opens the input with, if any.
-    fn input_password(&self) -> &str {
+    fn input_password(&self) -> Option<&str> {
         match self {
-            Self::Decrypt { password } => password,
-            _ => "",
+            Self::Decrypt { password } => Some(password),
+            _ => None,
         }
     }
 }
@@ -383,16 +383,19 @@ pub fn transform(input: &Path, output: &Path, transform: &Transform) -> Result<O
     run(&job)
 }
 
-/// Checks the structure of the PDF at `input`, opened with `password`.
+/// Checks the structure of the PDF at `input`, opened with `password` if
+/// it needs one.
 ///
 /// # Errors
 ///
 /// [`QpdfError::Failed`] if qpdf finds errors.
-pub fn check(input: &Path, password: &str) -> Result<Outcome, QpdfError> {
+pub fn check(input: &Path, password: Option<&str>) -> Result<Outcome, QpdfError> {
     let mut json = String::from("{\"inputFile\":");
     json_string(&mut json, path_str(input)?);
-    json.push_str(",\"password\":");
-    json_string(&mut json, no_nul(password)?);
+    if let Some(password) = password {
+        json.push_str(",\"password\":");
+        json_string(&mut json, no_nul(password)?);
+    }
     json.push_str(",\"check\":\"\"}");
     run(&Secret::new(json)?)
 }
@@ -416,28 +419,31 @@ fn run(_: &Secret) -> Result<Outcome, QpdfError> {
     Err(QpdfError::Unavailable)
 }
 
-/// The number of pages in the PDF at `path`, opened with `password`.
+/// The number of pages in the PDF at `path`, opened with `password` if it
+/// needs one.
 ///
 /// # Errors
 ///
-/// [`QpdfError::Failed`] if qpdf cannot open it, including with a wrong
-/// password.
-pub fn page_count(path: &Path, password: &str) -> Result<u32, QpdfError> {
+/// [`QpdfError::Failed`] if qpdf cannot open it, including without the
+/// password it needs or with a wrong one.
+pub fn page_count(path: &Path, password: Option<&str>) -> Result<u32, QpdfError> {
     let path = Secret::new(path_str(path)?.to_owned())?;
-    let password = Secret::new(password.to_owned())?;
-    pages(&path, &password)
+    let password = password
+        .map(|password| Secret::new(password.to_owned()))
+        .transpose()?;
+    pages(&path, password.as_ref())
 }
 
 #[cfg(paperwarden_qpdf)]
-fn pages(path: &Secret, password: &Secret) -> Result<u32, QpdfError> {
+fn pages(path: &Secret, password: Option<&Secret>) -> Result<u32, QpdfError> {
     if !limited() {
         return Err(QpdfError::Unavailable);
     }
-    ffi::page_count(path.get(), password.get()).ok_or(QpdfError::Failed)
+    ffi::page_count(path.get(), password.map(Secret::get)).ok_or(QpdfError::Failed)
 }
 
 #[cfg(not(paperwarden_qpdf))]
-fn pages(_: &Secret, _: &Secret) -> Result<u32, QpdfError> {
+fn pages(_: &Secret, _: Option<&Secret>) -> Result<u32, QpdfError> {
     Err(QpdfError::Unavailable)
 }
 
@@ -497,11 +503,11 @@ impl QpdfProcessor {
         }
     }
 
-    /// The password the output opens with.
-    fn output_password(&self) -> &str {
+    /// The password the output opens with, if it needs one.
+    fn output_password(&self) -> Option<&str> {
         match &self.transform {
-            Transform::Encrypt { user, .. } => user,
-            _ => "",
+            Transform::Encrypt { user, .. } if !user.is_empty() => Some(user),
+            _ => None,
         }
     }
 }
@@ -707,6 +713,9 @@ mod tests {
         assert!(!available());
         let result = transform(Path::new("a"), Path::new("b"), &Transform::Rewrite);
         assert_eq!(result, Err(QpdfError::Unavailable));
-        assert_eq!(page_count(Path::new("a"), ""), Err(QpdfError::Unavailable));
+        assert_eq!(
+            page_count(Path::new("a"), None),
+            Err(QpdfError::Unavailable)
+        );
     }
 }
