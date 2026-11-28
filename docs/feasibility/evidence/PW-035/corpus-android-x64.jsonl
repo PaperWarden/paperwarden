@@ -1,0 +1,16 @@
+{"fixture":"malformed/pdf/bad-xref-offsets.pdf","outcome":"repair","result":"rendered","notices":["repaired"],"ms":1810}
+{"fixture":"malformed/pdf/header-only.pdf","outcome":"reject","result":"engineFailed","notices":[],"message":"the PDF has no content","ms":8}
+{"fixture":"malformed/pdf/no-eof-marker.pdf","outcome":"repair","result":"rendered","notices":["repaired"],"ms":1865}
+{"fixture":"malformed/truncated.pdf","outcome":"reject","result":"engineFailed","notices":[],"message":"the PDF has no content","ms":13}
+{"fixture":"security/pdf/deep-nesting.pdf","outcome":"bound","result":"refused","notices":[],"message":"the PDF nests objects too deeply","ms":8}
+{"fixture":"security/pdf/extreme-page-size.pdf","outcome":"bound","result":"engineFailed","notices":[],"message":"a page could not be rendered","ms":777}
+{"fixture":"security/pdf/flate-bomb.pdf","outcome":"bound","result":"refused","notices":[],"message":"part of the PDF expands far more than real content does","ms":13}
+{"fixture":"security/pdf/javascript-openaction.pdf","outcome":"neutralize","result":"rendered","notices":["scripts"],"ms":1900}
+{"fixture":"security/pdf/launch-and-uri-actions.pdf","outcome":"neutralize","result":"rendered","notices":["launchActions","webLinks"],"ms":1845}
+{"fixture":"security/pdf/stream-length-overflow.pdf","outcome":"repair","result":"rendered","notices":["repaired"],"ms":1786}
+{"fixture":"security/pdf/xref-prev-loop.pdf","outcome":"repair","result":"rendered","notices":["repaired"],"ms":1763}
+{"fixture":"valid/pdf/incremental-update.pdf","outcome":"accept","result":"rendered","notices":[],"ms":1750}
+{"fixture":"valid/pdf/large-image.pdf","outcome":"accept","result":"rendered","notices":[],"ms":5190}
+{"fixture":"valid/pdf/many-pages-200.pdf","outcome":"accept","result":"rendered","notices":[],"ms":1870}
+{"fixture":"valid/pdf/one-page.pdf","outcome":"accept","result":"rendered","notices":[],"ms":1740}
+{"fixture":"valid/pdf/two-pages-flate.pdf","outcome":"accept","result":"rendered","notices":[],"ms":1776}

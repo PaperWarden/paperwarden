@@ -1,0 +1,19 @@
+C:/app dev/paper warden/apps/mobile/integration_test/bridge_test.dart: a synchronous call returns the core version
+C:/app dev/paper warden/apps/mobile/integration_test/bridge_test.dart: an asynchronous call completes without blocking Dart
+C:/app dev/paper warden/apps/mobile/integration_test/bridge_test.dart: cancelling stops a running call with a typed error
+C:/app dev/paper warden/apps/mobile/integration_test/bridge_test.dart: invalid arguments are rejected with a typed error
+C:/app dev/paper warden/apps/mobile/integration_test/bridge_test.dart: core validation errors reach Dart
+C:/app dev/paper warden/apps/mobile/integration_test/bridge_test.dart: document check a damaged PDF with a script opens with typed notices
+C:/app dev/paper warden/apps/mobile/integration_test/bridge_test.dart: document check a file that is not a PDF is refused with a typed reason
+C:/app dev/paper warden/apps/mobile/integration_test/bridge_test.dart: document check a missing file is a typed error
+C:/app dev/paper warden/apps/mobile/integration_test/render_service_test.dart: a job renders through the service and its page is verified
+C:/app dev/paper warden/apps/mobile/integration_test/render_service_test.dart: PDFium is loaded only in an isolated process without Internet
+C:/app dev/paper warden/apps/mobile/integration_test/render_service_test.dart: every job gets a fresh process
+C:/app dev/paper warden/apps/mobile/integration_test/render_service_test.dart: a render over its memory ceiling stops only the service
+4096 px page at 96 MiB: died -1
+C:/app dev/paper warden/apps/mobile/integration_test/render_service_test.dart: a render past its time limit is stopped
+C:/app dev/paper warden/apps/mobile/integration_test/render_service_test.dart: a killed render is a typed error and leaves no workspace
+C:/app dev/paper warden/apps/mobile/integration_test/render_service_test.dart: corpus every PDF fixture meets its outcome through the service
+C:/app dev/paper warden/apps/mobile/integration_test/render_service_test.dart: corpus the flate bomb, sent past the pre-check, is contained
+flate bomb at 96 MiB: died
+All tests passed!

@@ -1,0 +1,1 @@
+RenderService is isolated, unexported and alone in :pdfium; no permissions requested beyond the app's own. PDFium and the bridge present for x86_64.

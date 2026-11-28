@@ -19,7 +19,10 @@ image, OCR language pack, or imported workflow can be attacker-controlled.
 
 1. Operating-system file picker/share sheet to PaperWarden.
 2. Flutter UI to the Rust FFI boundary.
-3. Rust orchestration to native and third-party processing engines.
+3. Rust orchestration to native and third-party processing engines. On
+   Android, PDFium sits behind a process boundary as well: an isolated
+   service process with no permissions, killed at the time limit and capped
+   in memory (#59).
 4. Isolated temporary workspace to explicit user export.
 5. Source repository and CI to signed release artifacts.
 

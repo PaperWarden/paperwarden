@@ -41,6 +41,24 @@ selected file
 The Rust core owns this lifecycle. Feature modules must not invent independent
 temporary-file or export behavior.
 
+### Engines in a separate process
+
+An engine that cannot be held to PaperWarden's bounds in-process runs in a
+disposable process of its own, inside the same lifecycle. The job runner still
+stages, validates, pre-checks and verifies in the app process; only the engine
+step crosses over, as file descriptors for the staged input and the empty
+output.
+
+- **PDFium on Android** (#59, ADR-0007) runs in `RenderService`, an
+  `android:isolatedProcess` alone in `:pdfium`: a fresh user id with no
+  permissions, no network and no access to the app's files. Rust
+  (`paperwarden_pdf::service`) confines that process before PDFium loads: an
+  address-space ceiling and a watchdog that kills it at the time limit. One
+  process serves one job. The app process never maps `libpdfium.so`.
+- Kotlin there is transport only: binding, Binder, file descriptors, JNI.
+- iOS has no equivalent for apps (PW-011); there, the pre-check is the
+  containment.
+
 ## Repository boundaries
 
 - UI code does not parse hostile document structures.

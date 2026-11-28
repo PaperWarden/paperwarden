@@ -34,7 +34,10 @@ Android and handled every hostile one without a crash or hang. It also showed:
 - **Android:** PDFium runs in a separate, memory-limited service process
   (preferably `android:isolatedProcess`) that is killed on timeout, so a
   hostile PDF cannot take the app down. This is required before PDFium ships on
-  Android.
+  Android. *Implemented in #59 (`docs/feasibility/PW-035-isolated-pdfium.md`):
+  `RenderService` in `android:isolatedProcess`, alone in `:pdfium`, one job
+  per process, with an address-space ceiling and a watchdog set by Rust before
+  PDFium loads.*
 - **Every platform, and the only containment on iOS:** before PDFium opens a
   file, a Rust pre-check in the core inspects the PDF structure itself.
   - **Size is measured by decoding, never by file size.** Compressed streams
