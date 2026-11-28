@@ -16,10 +16,16 @@ crate-type = ["cdylib", "staticlib", "lib"]
 
 [dependencies]
 # Only what the generated code needs. `rust-async` is required by opaque types
-# (`CancelHandle`); logging, backtrace, anyhow and wasm-start stay off.
-flutter_rust_bridge = { version = "=2.13.0", default-features = false, features = ["dart-opaque", "rust-async", "thread-pool"] }
+# (`CancelHandle`); `anyhow` by Dart callbacks (`render_pdf`'s engine, #59),
+# whose exceptions arrive as `anyhow::Error`. Logging, backtrace and
+# wasm-start stay off.
+flutter_rust_bridge = { version = "=2.13.0", default-features = false, features = ["anyhow", "dart-opaque", "rust-async", "thread-pool"] }
 paperwarden-core = { path = "../.." }
 paperwarden-pdf-scan = { path = "../pdf-scan" }
+# PDFium itself is loaded only in the Android render service (#59).
+paperwarden-pdf = { path = "../pdf" }
+# Waits for the Dart callback that runs the render service.
+futures-executor = { version = "0.3.34", default-features = false, features = ["std"] }
 
 # The bridge cannot inherit the workspace's `unsafe_code = "forbid"`: the
 # generated FFI glue is unsafe by nature. Hand-written code here keeps the same

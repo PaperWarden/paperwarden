@@ -5,6 +5,7 @@
 
 import 'api/document.dart';
 import 'api/probe.dart';
+import 'api/render.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
@@ -69,7 +70,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -1466635674;
+  int get rustContentHash => -218294015;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -91,6 +92,15 @@ abstract class RustLibApi extends BaseApi {
       {required String path, required CancelHandle cancel});
 
   String crateApiProbeCoreVersion();
+
+  Future<RenderedPdf> crateApiRenderRenderPdf(
+      {required String path,
+      required String jobsDir,
+      required String destination,
+      required int maxWidth,
+      required int maxHeight,
+      required CancelHandle cancel,
+      required FutureOr<EngineOutcome> Function(EngineRequest) engine});
 
   Future<int> crateApiProbeRunProbeJob(
       {required int steps,
@@ -240,6 +250,61 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<RenderedPdf> crateApiRenderRenderPdf(
+      {required String path,
+      required String jobsDir,
+      required String destination,
+      required int maxWidth,
+      required int maxHeight,
+      required CancelHandle cancel,
+      required FutureOr<EngineOutcome> Function(EngineRequest) engine}) {
+    return handler.executeNormal(NormalTask(
+      callFfi: (port_) {
+        final serializer = SseSerializer(generalizedFrbRustBinding);
+        sse_encode_String(path, serializer);
+        sse_encode_String(jobsDir, serializer);
+        sse_encode_String(destination, serializer);
+        sse_encode_u_32(maxWidth, serializer);
+        sse_encode_u_32(maxHeight, serializer);
+        sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
+            cancel, serializer);
+        sse_encode_DartFn_Inputs_engine_request_Output_engine_outcome_AnyhowException(
+            engine, serializer);
+        pdeCallFfi(generalizedFrbRustBinding, serializer,
+            funcId: 6, port: port_);
+      },
+      codec: SseCodec(
+        decodeSuccessData: sse_decode_rendered_pdf,
+        decodeErrorData: sse_decode_bridge_error,
+      ),
+      constMeta: kCrateApiRenderRenderPdfConstMeta,
+      argValues: [
+        path,
+        jobsDir,
+        destination,
+        maxWidth,
+        maxHeight,
+        cancel,
+        engine
+      ],
+      apiImpl: this,
+    ));
+  }
+
+  TaskConstMeta get kCrateApiRenderRenderPdfConstMeta => const TaskConstMeta(
+        debugName: "render_pdf",
+        argNames: [
+          "path",
+          "jobsDir",
+          "destination",
+          "maxWidth",
+          "maxHeight",
+          "cancel",
+          "engine"
+        ],
+      );
+
+  @override
   Future<int> crateApiProbeRunProbeJob(
       {required int steps,
       required int stepMillis,
@@ -252,7 +317,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
             cancel, serializer);
         pdeCallFfi(generalizedFrbRustBinding, serializer,
-            funcId: 6, port: port_);
+            funcId: 7, port: port_);
       },
       codec: SseCodec(
         decodeSuccessData: sse_decode_u_32,
@@ -275,7 +340,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       callFfi: () {
         final serializer = SseSerializer(generalizedFrbRustBinding);
         sse_encode_String(id, serializer);
-        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
+        return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8)!;
       },
       codec: SseCodec(
         decodeSuccessData: sse_decode_String,
@@ -292,6 +357,39 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         argNames: ["id"],
       );
 
+  Future<void> Function(int, dynamic)
+      encode_DartFn_Inputs_engine_request_Output_engine_outcome_AnyhowException(
+          FutureOr<EngineOutcome> Function(EngineRequest) raw) {
+    return (callId, rawArg0) async {
+      final arg0 = dco_decode_engine_request(rawArg0);
+
+      Box<EngineOutcome>? rawOutput;
+      Box<AnyhowException>? rawError;
+      try {
+        rawOutput = Box(await raw(arg0));
+      } catch (e, s) {
+        rawError = Box(AnyhowException("$e\n\n$s"));
+      }
+
+      final serializer = SseSerializer(generalizedFrbRustBinding);
+      assert((rawOutput != null) ^ (rawError != null));
+      if (rawOutput != null) {
+        serializer.buffer.putUint8(0);
+        sse_encode_engine_outcome(rawOutput.value, serializer);
+      } else {
+        serializer.buffer.putUint8(1);
+        sse_encode_AnyhowException(rawError!.value, serializer);
+      }
+      final output = serializer.intoRaw();
+
+      generalizedFrbRustBinding.dartFnDeliverOutput(
+          callId: callId,
+          ptr: output.ptr,
+          rustVecLen: output.rustVecLen,
+          dataLen: output.dataLen);
+    };
+  }
+
   RustArcIncrementStrongCountFnType
       get rust_arc_increment_strong_count_CancelHandle => wire
           .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle;
@@ -299,6 +397,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   RustArcDecrementStrongCountFnType
       get rust_arc_decrement_strong_count_CancelHandle => wire
           .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle;
+
+  @protected
+  AnyhowException dco_decode_AnyhowException(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return AnyhowException(raw as String);
+  }
 
   @protected
   CancelHandle
@@ -314,6 +418,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return CancelHandleImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  FutureOr<EngineOutcome> Function(EngineRequest)
+      dco_decode_DartFn_Inputs_engine_request_Output_engine_outcome_AnyhowException(
+          dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError('');
+  }
+
+  @protected
+  Object dco_decode_DartOpaque(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return decodeDartOpaque(raw, generalizedFrbRustBinding);
   }
 
   @protected
@@ -379,9 +497,51 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  EngineEnd dco_decode_engine_end(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return EngineEnd.values[raw as int];
+  }
+
+  @protected
+  EngineOutcome dco_decode_engine_outcome(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return EngineOutcome(
+      end: dco_decode_engine_end(arr[0]),
+      status: dco_decode_i_32(arr[1]),
+    );
+  }
+
+  @protected
+  EngineRequest dco_decode_engine_request(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    return EngineRequest(
+      input: dco_decode_String(arr[0]),
+      output: dco_decode_String(arr[1]),
+      maxWidth: dco_decode_u_32(arr[2]),
+      maxHeight: dco_decode_u_32(arr[3]),
+      maxInputBytes: dco_decode_u_64(arr[4]),
+      maxOutputBytes: dco_decode_u_64(arr[5]),
+      timeLimitMs: dco_decode_u_64(arr[6]),
+      memoryBudgetBytes: dco_decode_u_64(arr[7]),
+    );
+  }
+
+  @protected
   int dco_decode_i_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
+  }
+
+  @protected
+  PlatformInt64 dco_decode_isize(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dcoDecodeI64(raw);
   }
 
   @protected
@@ -409,9 +569,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RenderedPdf dco_decode_rendered_pdf(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return RenderedPdf(
+      bytes: dco_decode_u_64(arr[0]),
+      notices: dco_decode_list_document_notice(arr[1]),
+    );
+  }
+
+  @protected
   int dco_decode_u_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
+  }
+
+  @protected
+  BigInt dco_decode_u_64(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dcoDecodeU64(raw);
   }
 
   @protected
@@ -433,6 +611,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    final inner = sse_decode_String(deserializer);
+    return AnyhowException(inner);
+  }
+
+  @protected
   CancelHandle
       sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
           SseDeserializer deserializer) {
@@ -448,6 +633,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return CancelHandleImpl.frbInternalSseDecode(
         sse_decode_usize(deserializer), sse_decode_i_32(deserializer));
+  }
+
+  @protected
+  Object sse_decode_DartOpaque(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    final inner = sse_decode_isize(deserializer);
+    return decodeDartOpaque(inner, generalizedFrbRustBinding);
   }
 
   @protected
@@ -510,9 +702,52 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  EngineEnd sse_decode_engine_end(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    final inner = sse_decode_i_32(deserializer);
+    return EngineEnd.values[inner];
+  }
+
+  @protected
+  EngineOutcome sse_decode_engine_outcome(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    final var_end = sse_decode_engine_end(deserializer);
+    final var_status = sse_decode_i_32(deserializer);
+    return EngineOutcome(end: var_end, status: var_status);
+  }
+
+  @protected
+  EngineRequest sse_decode_engine_request(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    final var_input = sse_decode_String(deserializer);
+    final var_output = sse_decode_String(deserializer);
+    final var_maxWidth = sse_decode_u_32(deserializer);
+    final var_maxHeight = sse_decode_u_32(deserializer);
+    final var_maxInputBytes = sse_decode_u_64(deserializer);
+    final var_maxOutputBytes = sse_decode_u_64(deserializer);
+    final var_timeLimitMs = sse_decode_u_64(deserializer);
+    final var_memoryBudgetBytes = sse_decode_u_64(deserializer);
+    return EngineRequest(
+        input: var_input,
+        output: var_output,
+        maxWidth: var_maxWidth,
+        maxHeight: var_maxHeight,
+        maxInputBytes: var_maxInputBytes,
+        maxOutputBytes: var_maxOutputBytes,
+        timeLimitMs: var_timeLimitMs,
+        memoryBudgetBytes: var_memoryBudgetBytes);
+  }
+
+  @protected
   int sse_decode_i_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getInt32();
+  }
+
+  @protected
+  PlatformInt64 sse_decode_isize(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getPlatformInt64();
   }
 
   @protected
@@ -555,9 +790,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RenderedPdf sse_decode_rendered_pdf(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    final var_bytes = sse_decode_u_64(deserializer);
+    final var_notices = sse_decode_list_document_notice(deserializer);
+    return RenderedPdf(bytes: var_bytes, notices: var_notices);
+  }
+
+  @protected
   int sse_decode_u_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint32();
+  }
+
+  @protected
+  BigInt sse_decode_u_64(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getBigUint64();
   }
 
   @protected
@@ -578,6 +827,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_AnyhowException(
+      AnyhowException self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.message, serializer);
+  }
+
+  @protected
   void
       sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerCancelHandle(
           CancelHandle self, SseSerializer serializer) {
@@ -594,6 +850,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_usize(
         (self as CancelHandleImpl).frbInternalSseEncode(move: false),
+        serializer);
+  }
+
+  @protected
+  void
+      sse_encode_DartFn_Inputs_engine_request_Output_engine_outcome_AnyhowException(
+          FutureOr<EngineOutcome> Function(EngineRequest) self,
+          SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_DartOpaque(
+        encode_DartFn_Inputs_engine_request_Output_engine_outcome_AnyhowException(
+            self),
+        serializer);
+  }
+
+  @protected
+  void sse_encode_DartOpaque(Object self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_isize(
+        PlatformPointerUtil.ptrToPlatformInt64(encodeDartOpaque(
+            self, portManager.dartHandlerPort, generalizedFrbRustBinding)),
         serializer);
   }
 
@@ -655,9 +932,41 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_engine_end(EngineEnd self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_engine_outcome(EngineOutcome self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_engine_end(self.end, serializer);
+    sse_encode_i_32(self.status, serializer);
+  }
+
+  @protected
+  void sse_encode_engine_request(EngineRequest self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.input, serializer);
+    sse_encode_String(self.output, serializer);
+    sse_encode_u_32(self.maxWidth, serializer);
+    sse_encode_u_32(self.maxHeight, serializer);
+    sse_encode_u_64(self.maxInputBytes, serializer);
+    sse_encode_u_64(self.maxOutputBytes, serializer);
+    sse_encode_u_64(self.timeLimitMs, serializer);
+    sse_encode_u_64(self.memoryBudgetBytes, serializer);
+  }
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putInt32(self);
+  }
+
+  @protected
+  void sse_encode_isize(PlatformInt64 self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putPlatformInt64(self);
   }
 
   @protected
@@ -696,9 +1005,22 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_rendered_pdf(RenderedPdf self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_64(self.bytes, serializer);
+    sse_encode_list_document_notice(self.notices, serializer);
+  }
+
+  @protected
   void sse_encode_u_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint32(self);
+  }
+
+  @protected
+  void sse_encode_u_64(BigInt self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putBigUint64(self);
   }
 
   @protected

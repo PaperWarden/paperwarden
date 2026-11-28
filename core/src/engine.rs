@@ -18,7 +18,7 @@ use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::io::{self, Write};
 use std::path::Path;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 /// Transforms a staged input into an output inside the job's workspace.
 pub trait Processor {
@@ -119,6 +119,11 @@ impl<'a> Guard<'a> {
             _ => Ok(()),
         }
     }
+
+    pub(crate) fn remaining(&self) -> Option<Duration> {
+        self.deadline
+            .map(|deadline| deadline.saturating_duration_since(Instant::now()))
+    }
 }
 
 /// What a [`Processor`] may use while it runs.
@@ -168,6 +173,24 @@ impl<'a> ProcessContext<'a> {
     /// Returns the [`Interruption`]; pass it on with `?`.
     pub fn checkpoint(&self) -> Result<(), Interruption> {
         self.guard.check()
+    }
+
+    /// The time left before the job's deadline, or `None` without one. An
+    /// engine running in another process passes it on as that process's own
+    /// limit (#59).
+    pub fn remaining_time(&self) -> Option<Duration> {
+        self.guard.remaining()
+    }
+
+    /// Where the job's output goes, inside the workspace. Its name carries
+    /// nothing from the original.
+    ///
+    /// Only for an engine that writes from another process, which is handed
+    /// the file rather than a [`BoundedWriter`]. Call
+    /// [`create_output`](Self::create_output) first so the file is new; the
+    /// runner still checks the output's size and verifies it afterwards.
+    pub fn output_path(&self) -> &Path {
+        self.output
     }
 
     /// Records something the user must be told about the document, such as

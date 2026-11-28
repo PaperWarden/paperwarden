@@ -16,6 +16,11 @@
 //! pre-check ([`precheck`], `paperwarden-pdf-scan`, ADR-0007). It stops what
 //! PDFium would otherwise decode unbounded, and records damage and active
 //! content for the user's warnings.
+//!
+//! On Android, PDFium never runs in the app process: [`service`] is the entry
+//! point for the disposable, confined process that hosts it (#59).
+
+pub mod service;
 
 use paperwarden_core::engine::{
     EngineError, Interruption, OutputVerifier, ProcessContext, Processor,
@@ -330,6 +335,71 @@ fn engine_failure(error: &PdfError) -> EngineError {
     })
 }
 
+/// Why [`render_pages`] stopped.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum RenderFailure {
+    /// The checkpoint stopped the work between pages.
+    Interrupted(Interruption),
+    /// PDFium could not render a page.
+    Pdf(PdfError),
+    /// The document has no pages.
+    NoPages,
+}
+
+impl From<RenderFailure> for EngineError {
+    fn from(failure: RenderFailure) -> Self {
+        match failure {
+            RenderFailure::Interrupted(interruption) => Self::Interrupted(interruption),
+            RenderFailure::Pdf(error) => engine_failure(&error),
+            RenderFailure::NoPages => Self::Failed("the PDF has no pages"),
+        }
+    }
+}
+
+/// Renders every page of `document` inside `max_width` x `max_height`,
+/// calling `checkpoint` before each page, and returns the first page.
+/// `rendered` is called after each page with the time it took.
+///
+/// # Errors
+///
+/// [`RenderFailure`] for an empty document, a page PDFium cannot render, or
+/// an interruption.
+pub fn render_pages(
+    document: &Document<'_>,
+    max_width: u32,
+    max_height: u32,
+    mut checkpoint: impl FnMut() -> Result<(), Interruption>,
+    mut rendered: impl FnMut(Duration),
+) -> Result<PageImage, RenderFailure> {
+    let mut first = None;
+    for index in 0..document.page_count() {
+        checkpoint().map_err(RenderFailure::Interrupted)?;
+        let started = Instant::now();
+        let image = document
+            .render(index, max_width, max_height)
+            .map_err(RenderFailure::Pdf)?;
+        rendered(started.elapsed());
+        if first.is_none() {
+            first = Some(image);
+        }
+    }
+    first.ok_or(RenderFailure::NoPages)
+}
+
+/// Writes `image` as a binary PPM (`P6`), the job's verifiable output.
+///
+/// # Errors
+///
+/// Any error from `output`.
+pub fn write_ppm(image: &PageImage, output: &mut impl Write) -> std::io::Result<()> {
+    write!(output, "P6\n{} {}\n255\n", image.width, image.height)?;
+    let (pixels, _) = image.rgba.as_chunks::<4>();
+    for [red, green, blue, _alpha] in pixels {
+        output.write_all(&[*red, *green, *blue])?;
+    }
+    output.flush()
+}
+
 impl Processor for RenderProcessor<'_> {
     fn process(&self, context: &mut ProcessContext<'_>) -> Result<(), EngineError> {
         *self.stats.borrow_mut() = RenderStats::default();
@@ -360,34 +430,18 @@ impl Processor for RenderProcessor<'_> {
             stats.pages = pages;
             stats.first_page_text = document.text(0).ok();
         }
-        if pages == 0 {
-            return Err(EngineError::Failed("the PDF has no pages"));
-        }
-
-        let mut first = None;
-        for index in 0..pages {
-            context.checkpoint()?;
-            let started = Instant::now();
-            let image = document
-                .render(index, self.max_width, self.max_height)
-                .map_err(|error| engine_failure(&error))?;
-            let mut stats = self.stats.borrow_mut();
-            stats.render_time += started.elapsed();
-            stats.rendered += 1;
-            if first.is_none() {
-                first = Some(image);
-            }
-        }
-        let Some(image) = first else {
-            return Err(EngineError::Failed("the PDF has no pages"));
-        };
-        let mut output = context.create_output()?;
-        write!(output, "P6\n{} {}\n255\n", image.width, image.height)?;
-        let (pixels, _) = image.rgba.as_chunks::<4>();
-        for [red, green, blue, _alpha] in pixels {
-            output.write_all(&[*red, *green, *blue])?;
-        }
-        output.flush()?;
+        let image = render_pages(
+            &document,
+            self.max_width,
+            self.max_height,
+            || context.checkpoint(),
+            |took| {
+                let mut stats = self.stats.borrow_mut();
+                stats.render_time += took;
+                stats.rendered += 1;
+            },
+        )?;
+        write_ppm(&image, &mut context.create_output()?)?;
         Ok(())
     }
 }

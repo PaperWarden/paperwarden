@@ -38,6 +38,31 @@ android {
     }
 }
 
+// PDFium for the isolated render service (#59), fetched and verified by
+// scripts/fetch_pdfium.py into third_party/pdfium/<platform>/lib. Only
+// RenderService's process loads it. It ships as libpaperwarden_pdfium.so:
+// every Android process already maps the system's own libpdfium.so, and a
+// distinct name means only this build can be loaded. An ABI whose library was
+// not fetched is left out; CI fetches all three and checks the APK carries each.
+val pdfiumPlatforms = mapOf(
+    "arm64-v8a" to "android-arm64",
+    "armeabi-v7a" to "android-arm",
+    "x86_64" to "android-x64",
+)
+val pdfiumJniLibs: File = layout.buildDirectory.dir("pdfium/jniLibs").get().asFile
+val stagePdfium by tasks.registering(Sync::class) {
+    pdfiumPlatforms.forEach { (abi, platform) ->
+        from(rootProject.file("../../../third_party/pdfium/$platform/lib")) {
+            include("libpdfium.so")
+            rename("libpdfium[.]so", "libpaperwarden_pdfium.so")
+            into(abi)
+        }
+    }
+    into(pdfiumJniLibs)
+}
+android.sourceSets.getByName("main").jniLibs.srcDir(pdfiumJniLibs)
+tasks.named("preBuild") { dependsOn(stagePdfium) }
+
 kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17

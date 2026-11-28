@@ -6,12 +6,16 @@ on:
       - "apps/mobile/**"
       - "core/**"
       - ".github/workflows/android.yml"
+      - "scripts/fetch_pdfium.py"
+      - "scripts/check_render_service.py"
   push:
     branches: [main]
     paths:
       - "apps/mobile/**"
       - "core/**"
       - ".github/workflows/android.yml"
+      - "scripts/fetch_pdfium.py"
+      - "scripts/check_render_service.py"
 
 permissions:
   contents: read
@@ -36,6 +40,14 @@ jobs:
         run: .github/scripts/setup_flutter.sh
         working-directory: ${{ github.workspace }}
       - run: flutter pub get
+      # PDFium for the isolated render service (#59): pinned, digest-checked,
+      # and refused if built with V8 or XFA.
+      - name: Fetch verified PDFium
+        working-directory: ${{ github.workspace }}
+        run: |
+          for platform in android-arm64 android-arm android-x64; do
+            python3 scripts/fetch_pdfium.py "$platform"
+          done
       - name: Verify production manifest has no Internet permission
         run: |
           if grep -q 'android.permission.INTERNET' android/app/src/main/AndroidManifest.xml; then
@@ -54,5 +66,14 @@ jobs:
               exit 1
             fi
           done
+      # PDFium stays in RenderService: isolated, unexported, alone in its
+      # process, and the release app requests no permissions (#59).
+      - name: Release manifest keeps PDFium isolated
+        run: |
+          ./android/gradlew -p android :app:processReleaseMainManifest
+          python3 ../../scripts/check_render_service.py \
+            --manifest build/app/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml \
+            --apk build/app/outputs/flutter-apk/app-debug.apk \
+            --abi arm64-v8a --abi armeabi-v7a --abi x86_64
       - name: Android lint
         run: ./android/gradlew -p android lintDebug

@@ -31,6 +31,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- PDFium runs only here, in a disposable isolated process (#59,
+             ADR-0007): a fresh user id with no permissions, no network and no
+             access to the app's files. Not exported; only the app binds it. -->
+        <service
+            android:name=".RenderService"
+            android:process=":pdfium"
+            android:isolatedProcess="true"
+            android:exported="false" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

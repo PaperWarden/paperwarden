@@ -71,3 +71,10 @@ All notable changes will be documented here after the first release baseline.
   The app has a `DocumentNotices` and a `DocumentRefusal` widget that put them
   into plain words. Each is read by screen readers as one announced block, and
   a new amber warning color meets WCAG AA in both themes.
+- On Android, PDFium now runs only in an isolated service process (#59).
+  The job runner stages, pre-checks and verifies in the app as before; the
+  render itself happens in `RenderService`, an `android:isolatedProcess` with
+  no permissions or network, which Rust confines with a memory ceiling and a
+  watchdog that kills it at the time limit. Each job gets a fresh process, and
+  a crash or overrun there is a typed error that leaves no workspace. CI checks
+  the merged manifest and that the APK carries PDFium for every ABI.

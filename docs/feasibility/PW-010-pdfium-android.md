@@ -173,7 +173,8 @@ Google Play requires for Android 15 targets. Its only dependencies are
 
 ## Follow-ups
 
-- Run PDFium in a separate, memory-limited Android process (finding 1).
+- Run PDFium in a separate, memory-limited Android process (finding 1). *Done
+  in #59 (PW-035).*
 - Add PaperWarden's PDF pre-check in Rust (ADR-0007): bounded decompression,
   nesting and loop bounds, `/Length` checks, repair detection and
   active-content flags (findings 1 to 3).

@@ -72,7 +72,7 @@ pub struct DocumentCheck {
     pub notices: Vec<DocumentNotice>,
 }
 
-fn document_notice(notice: Notice) -> DocumentNotice {
+pub(crate) fn document_notice(notice: Notice) -> DocumentNotice {
     match notice {
         Notice::Repaired => DocumentNotice::Repaired,
         Notice::NotRun(Inert::Scripts) => DocumentNotice::Scripts,
